@@ -167,7 +167,7 @@ class AuthSystem {
         this.authContainer.innerHTML = `
             <div class="auth-forms">
                 <div class="auth-header">
-                    <h1>Infinite Wordle</h1>
+                <h1>Infinite Wordle</h1>
                     <p>Sign in or create an account to play</p>
                 </div>
                 
@@ -179,32 +179,36 @@ class AuthSystem {
                 </div>
                 
                 <form id="login-form" class="auth-form">
-                    <div class="form-group">
-                        <label for="login-username">Username</label>
+                        <div class="form-group">
+                            <label for="login-username">Username</label>
                         <input type="text" id="login-username" name="username" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="login-password">Password</label>
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Password</label>
                         <input type="password" id="login-password" name="password" required>
-                    </div>
-                    <button type="submit" class="auth-button">Login</button>
-                </form>
+                        </div>
+                        <button type="submit" class="auth-button">Login</button>
+                    </form>
                 
                 <form id="signup-form" class="auth-form hidden">
-                    <div class="form-group">
+                        <div class="form-group">
                         <label for="signup-username">Username</label>
                         <input type="text" id="signup-username" name="username" required>
-                    </div>
-                    <div class="form-group">
+                        </div>
+                        <div class="form-group">
+                        <label for="signup-email">Email</label>
+                        <input type="email" id="signup-email" name="email" required>
+                        </div>
+                        <div class="form-group">
                         <label for="signup-password">Password</label>
                         <input type="password" id="signup-password" name="password" required>
-                    </div>
-                    <div class="form-group">
+                        </div>
+                        <div class="form-group">
                         <label for="signup-confirm">Confirm Password</label>
                         <input type="password" id="signup-confirm" name="confirm" required>
-                    </div>
+                        </div>
                     <button type="submit" class="auth-button">Sign Up</button>
-                </form>
+                    </form>
             </div>
         `;
 
@@ -358,10 +362,11 @@ class AuthSystem {
         this.signupForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const username = document.getElementById('signup-username').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
             const password = document.getElementById('signup-password').value;
             const confirm = document.getElementById('signup-confirm').value;
             
-            this.signup(username, password, confirm);
+            this.signup(username, email, password, confirm);
         });
     }
     
@@ -404,17 +409,7 @@ class AuthSystem {
         }
     }
     
-    // Add this function to check for inappropriate language in usernames
-    containsInappropriateLanguage(username) {
-        // Basic client-side check for common inappropriate terms
-        const commonInappropriateTerms = [
-            'badword1', 'badword2', 'slur', 'inappropriate' // Add more as needed
-        ];
-        const normalizedUsername = username.toLowerCase();
-        return commonInappropriateTerms.some(term => normalizedUsername.includes(term));
-    }
-    
-    async signup(username, password, confirm) {
+    async signup(username, email, password, confirm) {
         // Validate password and confirmation
         if (password !== confirm) {
             this.showAuthMessage('Passwords do not match.');
@@ -432,12 +427,6 @@ class AuthSystem {
             return false;
         }
         
-        // Check for inappropriate language
-        if (this.containsInappropriateLanguage(username)) {
-            this.showAuthMessage('Username contains inappropriate language. Please choose another.');
-            return false;
-        }
-        
         try {
             this.showAuthMessage('Creating your account...', false);
             
@@ -447,7 +436,7 @@ class AuthSystem {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ username, email, password })
             });
             
             const data = await response.json();

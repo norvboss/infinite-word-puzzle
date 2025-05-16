@@ -8,21 +8,10 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
-require('dotenv').config();
+
 const app = express();
 const server = http.createServer(app);
 
-const blockedWords = [
-    'badword1', 'badword2', 'slur', 'inappropriate',
-    // Add your comprehensive list of words to block here
-    'fuck', 'shit', 'ass', 'bitch', 'dick', 'cock', 'pussy', 'cunt',
-    'whore', 'slut', 'bastard', 'nigger', 'faggot', 'retard', 'nazi'
-    // (Add more inappropriate words as needed)
-];
-function isProfane(str) {
-    const lowerStr = str.toLowerCase();
-    return blockedWords.some(word => lowerStr.includes(word));
-}
 // Configure CORS properly for all origins
 app.use(cors({
   origin: '*',
@@ -1193,6 +1182,7 @@ app.post('/guest-login', (req, res) => {
 // User Schema
 const UserSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true },
     password: { type: String, required: true }, // Will be hashed by pre-save hook
     stats: {
         gamesPlayed: { type: Number, default: 0 },
@@ -1200,12 +1190,16 @@ const UserSchema = new mongoose.Schema({
         currentStreak: { type: Number, default: 0 },
         maxStreak: { type: Number, default: 0 },
         totalPoints: { type: Number, default: 0 },
-        highestLevel: { type: Number, default: 1 },
-        levelProgress: { type: Number, default: 0 },
-        currentLevel: { type: Number, default: 1 },
-        currentLevelProgress: { type: Number, default: 0 }
+        highestLevel: { type: Number, default: 1 },    // Added
+        levelProgress: { type: Number, default: 0 },    // Added
+        currentLevel: { type: Number, default: 1 }, // Current single-player level
+        currentLevelProgress: { type: Number, default: 0 } // Words completed in current level
+        // Note: totalPoints already exists and can track overall points.
+        // Consider adding lastPlayed: { type: Date } if needed
     },
-    friends: [{ type: String }]
+    // Store friend usernames directly for simplicity, or use ObjectIds for references
+    friends: [{ type: String }] // Assuming storing usernames for now
+    // You might add friendRequests fields later if needed
 });
 
 // Hash password before saving
@@ -1223,43 +1217,30 @@ UserSchema.pre('save', async function(next) {
 // Create the User model from the schema
 const User = mongoose.model('User', UserSchema);
 
-// Add custom words to filter if needed
-
-// Custom function to check for evasive inappropriate words
-function checkEvasiveLanguage(username) {
-    const evasivePatterns = [
-        /b+\s*[4a]+\s*d+\s*[w0]+.*r+.*d+/i,  // Matches b4dw0rd and variations
-        // Add more patterns as needed
-    ];
-    return evasivePatterns.some(pattern => pattern.test(username));
-}
-
 // API Routes
 app.post('/register', async (req, res) => {
     console.log("--- Received POST /register request ---");
     console.log("Request body:", req.body);
+    
     try {
-        const { username, password } = req.body;
-        // Check for inappropriate username
-        if (isProfane(username) || checkEvasiveLanguage(username)) {
-            console.log("Register: Rejected inappropriate username:", username);
-            return res.status(400).json({ 
-                error: 'Username contains inappropriate language. Please choose another username.' 
-            });
-        }
+        const { username, email, password } = req.body;
+        
         // Check if user already exists
-        const existingUser = await User.findOne({ username });
+        const existingUser = await User.findOne({ 
+            $or: [{ username }, { email }] 
+        });
         
         if (existingUser) {
             console.log("Register: User already exists:", existingUser.username);
             return res.status(400).json({ 
-                error: 'Username already taken' 
+                error: 'User already exists with that username or email' 
             });
         }
         
         // Create new user
         const user = new User({
             username,
+            email,
             password
         });
         
@@ -1271,7 +1252,7 @@ app.post('/register', async (req, res) => {
             // Generate token
             const token = jwt.sign(
                 { id: user._id, username: user.username },
-                process.env.JWT_SECRET || 'your-secret-key',
+                'your-secret-key',
                 { expiresIn: '7d' }
             );
             
@@ -1281,24 +1262,26 @@ app.post('/register', async (req, res) => {
                 user: {
                     id: user._id,
                     username: user.username,
+                    email: user.email,
                     stats: user.stats,
                     friends: user.friends
                 }
             });
         } catch (err) {
-            if (err.code === 11000) {
+            if (err.code === 11000) {  // MongoDB duplicate key error
                 console.log("Register: Duplicate key error detected");
                 return res.status(400).json({
-                    error: 'Username already exists'
+                    error: 'Username or email already exists'
                 });
             }
-            throw err;
+            throw err;  // Re-throw other errors
         }
     } catch (error) {
         console.error("Register error:", error);
         return res.status(500).json({ error: 'Server error' });
     }
 });
+
 app.post('/login', async (req, res) => {
     console.log("--- Received POST /login request ---");
     console.log("Request body:", req.body);
@@ -1327,7 +1310,7 @@ app.post('/login', async (req, res) => {
         // Generate token
         const token = jwt.sign(
             { id: user._id, username: user.username },
-            process.env.JWT_SECRET || 'your-secret-key',
+            'your-secret-key',
             { expiresIn: '7d' }
         );
         
@@ -1342,7 +1325,6 @@ app.post('/login', async (req, res) => {
                 friends: user.friends
             }
         });
-
     } catch (error) {
         console.error("Login error:", error);
         res.status(500).json({ error: 'Server error' });
