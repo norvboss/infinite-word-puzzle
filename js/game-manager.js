@@ -186,8 +186,8 @@ class GameManager {
             console.log("Setting up back button event listener");
             backButton.addEventListener('click', () => {
                 console.log("Back button clicked");
-                this.exitGame();
-            });
+            this.exitGame();
+        });
         } else {
             console.error("Back button element not found in setupEventListeners");
         }
@@ -342,7 +342,7 @@ class GameManager {
                     if (!window.multiplayerSocket.connected) {
                         window.multiplayerSocket.connect();
                     }
-                } else {
+        } else {
                     console.warn('Game Manager: Missing game ID or socket handler');
                 }
                 
@@ -663,7 +663,7 @@ class GameManager {
         
         // Override handleLoss
         this.wordleGame.handleLoss = () => {
-             // Call original method first
+            // Call original method first
             originalHandleLoss.call(this.wordleGame);
             
             // *** Update GameManager stats ***
@@ -893,9 +893,9 @@ class GameManager {
         
         // Clean up any multiplayer resources
         if (window.multiplayerGameUI) {
-            if (typeof window.multiplayerGameUI.cleanup === 'function') {
+             if (typeof window.multiplayerGameUI.cleanup === 'function') {
                 try {
-                    window.multiplayerGameUI.cleanup();
+                 window.multiplayerGameUI.cleanup();
                 } catch (error) {
                     console.error('Error cleaning up multiplayer game UI:', error);
                 }
@@ -949,7 +949,7 @@ class GameManager {
                 console.log('Back button clicked');
                 this.exitGame();
             });
-        } else {
+             } else {
             console.warn('Back button not found in setupBackButton');
         }
     }
@@ -1135,19 +1135,19 @@ class GameManager {
                      // window.authSystem.updateCurrentUser({ username: window.authSystem.currentUser.username, stats: result.stats });
 
                      // Now refresh the HomeScreen UI to reflect the updated stats
-                     if (window.homeScreen && typeof window.homeScreen.show === 'function') {
+        if (window.homeScreen && typeof window.homeScreen.show === 'function') {
                          console.log("GameManager: Triggering HomeScreen update.");
-                         window.homeScreen.show(); 
+            window.homeScreen.show(); 
                      }
 
-                 } else {
+        } else {
                      console.warn("GameManager: Server save failed:", result.error, ". Progress still saved locally.");
                  }
              } catch (error) {
                  // This catch block is for network errors or unexpected issues in saveUserProgress itself
                  console.error("GameManager: Error calling saveUserProgress:", error);
              }
-        } else {
+            } else {
              console.log("User not authenticated or saveUserProgress function not found, skipping server save.");
         }
     }

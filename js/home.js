@@ -21,7 +21,7 @@ class HomeScreen {
         
         // Set up event listeners only if container exists
         if(this.container) {
-            this.setupEventListeners();
+        this.setupEventListeners();
         }
         
         this.fetchLeaderboard(); // Fetch initial leaderboard
@@ -1437,9 +1437,9 @@ class HomeScreen {
                      if (this.container) this.container.classList.add('hidden');
                      this.container.style.display = 'none';
                      window.authSystem.initAuthentication();
-                     return;
-                 }
-             }
+                 return;
+            }
+        }
 
             // Update header display
             const usernameDisplay = document.getElementById('home-username-display');
@@ -1462,7 +1462,7 @@ class HomeScreen {
                 console.log("HomeScreen.show: Making home container visible");
                 this.container.classList.remove('hidden');
                 this.container.style.display = 'block'; // Explicitly set display style
-            } else {
+        } else {
                 console.error("HomeScreen.show: Home container not found!");
             }
         } else {
@@ -1495,9 +1495,9 @@ class HomeScreen {
             console.log("User data refreshed. Friends:", this.currentUser.friends);
             
             // Update UI
-            this.updateProfileUI();
-            this.updateStatsUI();
-            this.updateFriendsUI();
+             this.updateProfileUI();
+             this.updateStatsUI();
+             this.updateFriendsUI();
             
             return true;
         } catch (error) {
@@ -1580,7 +1580,7 @@ class HomeScreen {
                         console.log('Updating current user stats locally...');
                         window.authSystem.updateCurrentUser(data.user); // Update local user data
                         this.show(); // Refresh the home screen UI to show new stats
-                    } else {
+        } else {
                         console.log('Stats update received, but not for the current user.');
                     }
                 }

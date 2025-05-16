@@ -430,7 +430,7 @@ io.on('connection', (socket) => {
                 
                 // Include targetWord if the guess is a winner
                 const notificationData = {
-                    gameId,
+        gameId,
                     username,
                     guess: submittedGuess,
                     result,
@@ -470,7 +470,7 @@ io.on('connection', (socket) => {
             
             // Notify current player
             socket.emit('game_over', {
-                gameId,
+        gameId,
                 result: gameResult,
                 targetWord,
                 opponentTries: opponents.length > 0 && opponentData[opponents[0]] ? 
@@ -502,7 +502,7 @@ io.on('connection', (socket) => {
                     
                     console.log(`Emitting game_over to ${opponentSocketId} with data:`, eventData);
                     io.to(opponentSocketId).emit('game_over', eventData);
-                } else {
+    } else {
                     // *** ADD LOGGING ***
                     console.log(`Opponent ${opponent} not found in userSocketMap, cannot send game_over event.`);
                 }
@@ -693,9 +693,9 @@ io.on('connection', (socket) => {
                 gameId: gameCode,
                 targetWord: targetWord,
                 wordLength: wordLength,
-                startTime: Date.now()
-            };
-            
+        startTime: Date.now()
+      };
+      
             io.to(challenge.fromUsername).emit('game_sync_response', syncData);
             io.to(responder).emit('game_sync_response', syncData);
             
@@ -748,16 +748,16 @@ io.on('connection', (socket) => {
                 targetWord: targetWord,
                 players: {},
                 difficulty: difficulty,
-                wordLength: targetWord.length
-            });
-            
+        wordLength: targetWord.length
+      });
+      
             console.log(`Creating new game ${gameId} with target word: ${targetWord}`);
             
             socket.emit('game_sync_response', {
                 gameId: gameId,
                 targetWord: targetWord,
                 difficulty: difficulty,
-                wordLength: targetWord.length
+        wordLength: targetWord.length
             });
         }
     });
@@ -827,7 +827,7 @@ io.on('connection', (socket) => {
         if (targetSocketId) {
             console.log(`Found target ${data.target} with socket ${targetSocketId}, sending direct challenge`);
             io.to(targetSocketId).emit('challenge_received', data);
-        } else {
+    } else {
             // Broadcast to all sockets and let client handle filtering
             console.log(`Target ${data.target} not found in socket map, broadcasting to all`);
             socket.broadcast.emit('challenge_notification', data);
