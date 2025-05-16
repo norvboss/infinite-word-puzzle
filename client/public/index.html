@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplayer Building Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+
+        #game-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        #canvas-container {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #ui-panel {
+            width: 250px;
+            background-color: #2a2a2a;
+            padding: 20px;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .resource-display {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #333;
+            border-radius: 5px;
+        }
+
+        .building-option {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #444;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .building-option:hover {
+            background-color: #555;
+        }
+
+        .building-cost {
+            font-size: 0.8em;
+            color: #aaa;
+        }
+
+        #status-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="canvas-container">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+        <div id="ui-panel">
+            <h2>Resources</h2>
+            <div class="resource-display">
+                <div>Gold: <span id="gold-amount">100</span></div>
+                <div>Wood: <span id="wood-amount">50</span></div>
+                <div>Stone: <span id="stone-amount">50</span></div>
+            </div>
+
+            <h2>Buildings</h2>
+            <div class="building-option" data-building="house">
+                <div>House</div>
+                <div class="building-cost">Cost: 50g, 20w, 10s</div>
+            </div>
+            <div class="building-option" data-building="farm">
+                <div>Farm</div>
+                <div class="building-cost">Cost: 30g, 15w, 5s</div>
+            </div>
+            <div class="building-option" data-building="tower">
+                <div>Tower</div>
+                <div class="building-cost">Cost: 100g, 30w, 50s</div>
+            </div>
+        </div>
+    </div>
+    <div id="status-message"></div>
+    <script src="js/game.js"></script>
+</body>
+</html> 

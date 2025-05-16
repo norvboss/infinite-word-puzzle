@@ -1,0 +1,174 @@
+.challenge-notification {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin: 10px;
+    padding: 15px;
+    max-width: 300px;
+    animation: slideIn 0.3s ease-out;
+    border: 1px solid #ddd;
+}
+
+.notification-content {
+    text-align: center;
+}
+
+.notification-content h3 {
+    margin: 0 0 10px 0;
+    color: #2196F3;
+}
+
+.notification-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.notification-buttons button {
+    flex: 1;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.accept-challenge {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.accept-challenge:hover {
+    background-color: #45a049;
+}
+
+.decline-challenge {
+    background-color: #F44336;
+    color: white;
+}
+
+.decline-challenge:hover {
+    background-color: #da190b;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+#notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+#mp-waiting-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.waiting-content {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.waiting-spinner {
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 2s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.game-result {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    text-align: center;
+    max-width: 400px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.result-header {
+    font-size: 24px;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.win-message {
+    color: #4CAF50;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.lose-message {
+    color: #F44336;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.result-divider {
+    margin: 15px 0;
+    border: 0;
+    border-top: 1px solid #eee;
+}
+
+.result-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+.result-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.play-again-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.play-again-btn:hover {
+    background-color: #45a049;
+}
+
+.home-btn {
+    background-color: #2196F3;
+    color: white;
+}
+
+.home-btn:hover {
+    background-color: #0b7dda;
+} 
