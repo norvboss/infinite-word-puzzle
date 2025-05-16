@@ -356,13 +356,18 @@ class AuthSystem {
         });
         
         // Signup form submission
+        let isSubmitting = false; 
         this.signupForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const username = document.getElementById('signup-username').value.trim();
             const password = document.getElementById('signup-password').value;
             const confirm = document.getElementById('signup-confirm').value;
             
-            this.signup(username, password, confirm);
+            this.signup(username, password, confirm)
+                .finally(() => {
+                    // Reset flag after 1 second to allow future submissions
+                    setTimeout(() => { isSubmitting = false; }, 1000);
+                });
         });
     }
     
