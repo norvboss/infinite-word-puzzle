@@ -1,3 +1,21 @@
+
+window.S_WORDS = new Set();
+window.S_WORDS_LOADED = false;
+
+fetch('s.txt')
+  .then(res => {
+    if (!res.ok) throw new Error(res.statusText);
+    return res.text();
+  })
+  .then(text => {
+    text.split(/\r?\n/).forEach(line => {
+      const w = line.trim().toUpperCase();
+      if (w) window.S_WORDS.add(w);
+    });
+    window.S_WORDS_LOADED = true;
+    console.log(`Loaded ${window.S_WORDS.size} target words from s.txt`);
+  })
+  .catch(err => console.error('Error loading s.txt:', err));
 class WordleGame {
     constructor(gameContentContainer) {
         console.log("WordleGame constructor called, container:", gameContentContainer);
@@ -376,26 +394,24 @@ class WordleGame {
     getTargetWord() {
         const lengthMap = { easy: 4, medium: 5, hard: 6, expert: 7 };
         const wordLength = lengthMap[this.difficulty] || 5;
-
-        let candidates;
-
-        // if dictionary is loaded, use it…
-        if (window.DICTIONARY_LOADED) {
-            // grab only words of the right length
-            candidates = Array.from(window.WORDS_ALPHA).filter(w => w.length === wordLength);
-        } else {
-            // otherwise fall back to your old small list (optional)
-            candidates = this.fallbackWords[wordLength] || [];
-            console.warn('Dictionary not loaded yet — using fallback word list.');
+      
+        // once s.txt is loaded, use it; otherwise fall back
+        const source = window.S_WORDS_LOADED
+          ? window.S_WORDS
+          : window.WORDS_ALPHA;
+      
+        const candidates = Array.from(source).filter(w => w.length === wordLength);
+      
+        if (!candidates.length) {
+          console.error(`No words of length ${wordLength}`);
+          return this.getFallbackWord();  // or however you handle it today
         }
-
-        if (candidates.length === 0) {
-            throw new Error(`No words of length ${wordLength} available!`);
-        }
-
-        // pick one at random
-        return candidates[Math.floor(Math.random() * candidates.length)];
-    }
+      
+        const choice = candidates[Math.floor(Math.random() * candidates.length)];
+        console.log("Target:", choice);
+        return choice;
+      }
+    
     
     // Get a fallback word if all else fails
     getFallbackWord() {
