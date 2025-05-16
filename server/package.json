@@ -1,7 +1,7 @@
 {
   "name": "infinite-wordle-server",
   "version": "1.0.0",
-  
+  "type": "commonjs",
   "description": "Multiplayer server for Infinite Wordle game",
   "main": "server.js",
   "scripts": {
