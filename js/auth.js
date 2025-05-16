@@ -26,76 +26,53 @@ class AuthSystem {
     async initAuthentication() {
         console.log("Auth: Starting initial authentication...");
         
-        // Hide all containers during initialization to prevent flicker
+        // Show loading indicator
         const loadingMessage = document.getElementById('loading-message');
         if (loadingMessage) loadingMessage.classList.remove('hidden');
         
+        // Hide containers during initialization
         const homeContainer = document.getElementById('home-container');
         if (homeContainer) homeContainer.classList.add('hidden');
         
         if (this.authContainer) this.authContainer.classList.add('hidden');
         
-        // Get token from localStorage
-        const token = localStorage.getItem('wordleToken');
-        
-        if (!token) {
-            console.log("Auth: No token found, showing login screen");
-            // Hide loading message
-            if (loadingMessage) loadingMessage.classList.add('hidden');
-            // Show auth container
-            if (this.authContainer) this.authContainer.classList.remove('hidden');
-            return;
-        }
-        
         try {
-            console.log("Auth: Token found, validating with server...");
-            // Check session with server
-            const response = await fetch(`${window.API_BASE_URL}/me`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+            // First check for token
+            const token = localStorage.getItem('wordleToken');
             
-                if (response.ok) {
-                console.log("Auth: Valid session, processing user data");
-                const userData = await response.json();
-                
-                // Set current user with complete data from server
-                this.currentUser = userData;
-                    this.isAuthenticated = true;
-                
-                // Update username display
-                const usernameDisplay = document.getElementById('home-username-display');
-                if (usernameDisplay) {
-                    usernameDisplay.textContent = this.currentUser.username || 'Unknown';
-                }
-                
-                // Show logout button
-                const logoutButton = document.getElementById('logout-button');
-                if (logoutButton) {
-                    logoutButton.classList.remove('hidden');
-                }
-                
-                // Initialize home screen
-                    if (window.homeScreen) {
-                    console.log("Auth: Initializing home screen with user data");
-                        window.homeScreen.init(this.currentUser);
-                    if (homeContainer) homeContainer.classList.remove('hidden');
-                } else {
-                    console.error("Auth: HomeScreen not found");
-                }
-                
-            } else {
+            if (!token) {
+                console.log("Auth: No token found, showing login screen");
+                if (this.authContainer) this.authContainer.classList.remove('hidden');
+                if (loadingMessage) loadingMessage.classList.add('hidden');
+                return;
+            }
+            
+            // Validate token with server before initializing anything else
+            const response = await fetch(`${window.API_BASE_URL}/me`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (!response.ok) {
                 console.log("Auth: Invalid token, showing login");
                 localStorage.removeItem('wordleToken');
-                // Show auth container
                 if (this.authContainer) this.authContainer.classList.remove('hidden');
+                if (loadingMessage) loadingMessage.classList.add('hidden');
+                return;
             }
+            
+            // Only proceed with user initialization if token is valid
+            const userData = await response.json();
+            this.currentUser = userData;
+            this.isAuthenticated = true;
+            
+            // Now initialize the rest of the app with valid user data
+            this.initializeAfterAuth(userData);
+            
         } catch (error) {
             console.error("Auth: Error during initialization:", error);
             localStorage.removeItem('wordleToken');
-            // Show auth container
             if (this.authContainer) this.authContainer.classList.remove('hidden');
         } finally {
-            // Always hide loading message when done
             if (loadingMessage) loadingMessage.classList.add('hidden');
         }
     }
@@ -359,6 +336,9 @@ class AuthSystem {
         let isSubmitting = false; 
         this.signupForm.addEventListener('submit', (e) => {
             e.preventDefault();
+            if (isSubmitting) return; // Prevent multiple submissions
+            isSubmitting = true;
+
             const username = document.getElementById('signup-username').value.trim();
             const password = document.getElementById('signup-password').value;
             const confirm = document.getElementById('signup-confirm').value;

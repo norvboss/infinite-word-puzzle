@@ -1102,8 +1102,6 @@ console.log(">>> Script start. Preparing MongoDB connection..."); // Add log
 let mongoConnected = false;
 
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/wordleDB', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
     serverSelectionTimeoutMS: 5000, // 5 second timeout for selection
     connectTimeoutMS: 10000 // 10 second timeout for initial connect
 }).then(() => {
