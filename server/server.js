@@ -1343,7 +1343,6 @@ app.post('/login', async (req, res) => {
             }
         });
 
-        localStorage.setItem('username', user.username);
     } catch (error) {
         console.error("Login error:", error);
         res.status(500).json({ error: 'Server error' });
