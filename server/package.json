@@ -1,7 +1,7 @@
 {
   "name": "infinite-wordle-server",
   "version": "1.0.0",
-  "type": "commonjs",
+  
   "description": "Multiplayer server for Infinite Wordle game",
   "main": "server.js",
   "scripts": {
@@ -16,7 +16,9 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.13.2",
     "socket.io": "^4.7.2",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "bad-words": "^3.0.4"
+
     
     
   },
