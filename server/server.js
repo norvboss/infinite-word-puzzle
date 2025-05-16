@@ -11,6 +11,7 @@ const fs = require('fs');
 require('dotenv').config();
 const app = express();
 const server = http.createServer(app);
+
 const blockedWords = [
     'badword1', 'badword2', 'slur', 'inappropriate',
     // Add your comprehensive list of words to block here
@@ -1240,7 +1241,7 @@ app.post('/register', async (req, res) => {
     try {
         const { username, password } = req.body;
         // Check for inappropriate username
-        if (filter.isProfane(username) || checkEvasiveLanguage(username)) {
+        if (isProfane(username) || checkEvasiveLanguage(username)) {
             console.log("Register: Rejected inappropriate username:", username);
             return res.status(400).json({ 
                 error: 'Username contains inappropriate language. Please choose another username.' 
