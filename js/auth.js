@@ -362,7 +362,7 @@ class AuthSystem {
             const password = document.getElementById('signup-password').value;
             const confirm = document.getElementById('signup-confirm').value;
             
-            this.signup(username, email, password, confirm);
+            this.signup(username, password, confirm);
         });
     }
     
