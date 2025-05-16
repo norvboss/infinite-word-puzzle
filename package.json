@@ -4,6 +4,7 @@
   "description": "A real-time multiplayer building simulation game where players can collaboratively build and interact in a shared world using WebSocket technology.",
   "main": "auth.js",
   "scripts": {
+    "start": "node auth.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
