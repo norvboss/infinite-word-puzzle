@@ -1342,6 +1342,8 @@ app.post('/login', async (req, res) => {
                 friends: user.friends
             }
         });
+
+        localStorage.setItem('username', user.username);
     } catch (error) {
         console.error("Login error:", error);
         res.status(500).json({ error: 'Server error' });
