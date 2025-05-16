@@ -6,7 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const fs = require('fs');
 
 const app = express();
