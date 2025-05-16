@@ -50,7 +50,7 @@ class AuthSystem {
         try {
             console.log("Auth: Token found, validating with server...");
             // Check session with server
-            const response = await fetch('http://localhost:3001/me', {
+            const response = await fetch(`${window.API_BASE_URL}/me`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
             
@@ -380,7 +380,7 @@ class AuthSystem {
             this.showAuthMessage('Logging in...', false);
             
             // Send login request to server
-            const response = await fetch('http://localhost:3001/login', {
+            const response = await fetch(`${window.API_BASE_URL}/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -431,7 +431,7 @@ class AuthSystem {
             this.showAuthMessage('Creating your account...', false);
             
             // Send signup request to server
-            const response = await fetch('http://localhost:3001/register', {
+            const response = await fetch(`${window.API_BASE_URL}/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -514,7 +514,7 @@ class AuthSystem {
         
         try {
             console.log("Auth.checkSession: Sending request to /me endpoint");
-            const response = await fetch('http://localhost:3001/me', {
+            const response = await fetch(`${window.API_BASE_URL}/me`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             
@@ -576,7 +576,7 @@ class AuthSystem {
                 return false;
             }
             
-            const response = await fetch('http://localhost:3001/stats', {
+            const response = await fetch(`${window.API_BASE_URL}/stats`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -679,7 +679,7 @@ class AuthSystem {
         }
 
         try {
-            const response = await fetch('/save-progress', {
+            const response = await fetch(`${window.API_BASE_URL}/save-progress`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -662,7 +662,7 @@ class HomeScreen {
             return;
         }
         
-        fetch(`http://localhost:3001/search-users?q=${encodeURIComponent(searchTerm)}`, {
+        fetch(`${window.API_BASE_URL}/search-users?q=${encodeURIComponent(searchTerm)}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -784,7 +784,7 @@ class HomeScreen {
             return;
         }
         
-        fetch('http://localhost:3001/add-friend', {
+        fetch(`${window.API_BASE_URL}/add-friend`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1601,7 +1601,7 @@ class HomeScreen {
         }
         this.leaderboardList.innerHTML = '<div class="loading">Loading leaderboard...</div>'; // Show loading state
         
-        fetch('/leaderboard')
+        fetch(`${window.API_BASE_URL}/leaderboard`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);

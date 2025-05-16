@@ -11,12 +11,26 @@ const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
 
-// Serve static files
+// Configure CORS properly for all origins
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Configure Socket.IO with CORS
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
+
+// Middleware
 app.use(express.static(path.join(__dirname, '../')));
 app.use(express.json());
-app.use(cors())
+
 // Game state management
 const waitingPlayers = {
   random: [], // for random matchmaking
