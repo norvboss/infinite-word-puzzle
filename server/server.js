@@ -11,9 +11,17 @@ const fs = require('fs');
 require('dotenv').config();
 const app = express();
 const server = http.createServer(app);
-const Filter = require('bad-words');
-const filter = new Filter();
-
+const blockedWords = [
+    'badword1', 'badword2', 'slur', 'inappropriate',
+    // Add your comprehensive list of words to block here
+    'fuck', 'shit', 'ass', 'bitch', 'dick', 'cock', 'pussy', 'cunt',
+    'whore', 'slut', 'bastard', 'nigger', 'faggot', 'retard', 'nazi'
+    // (Add more inappropriate words as needed)
+];
+function isProfane(str) {
+    const lowerStr = str.toLowerCase();
+    return blockedWords.some(word => lowerStr.includes(word));
+}
 // Configure CORS properly for all origins
 app.use(cors({
   origin: '*',
@@ -1215,7 +1223,6 @@ UserSchema.pre('save', async function(next) {
 const User = mongoose.model('User', UserSchema);
 
 // Add custom words to filter if needed
-filter.addWords(['someadditionalword', 'anotherword']);
 
 // Custom function to check for evasive inappropriate words
 function checkEvasiveLanguage(username) {
