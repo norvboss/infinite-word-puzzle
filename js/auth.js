@@ -195,10 +195,7 @@ class AuthSystem {
                         <label for="signup-username">Username</label>
                         <input type="text" id="signup-username" name="username" required>
                         </div>
-                        <div class="form-group">
-                        <label for="signup-email">Email</label>
-                        <input type="email" id="signup-email" name="email" required>
-                        </div>
+
                         <div class="form-group">
                         <label for="signup-password">Password</label>
                         <input type="password" id="signup-password" name="password" required>
@@ -362,7 +359,6 @@ class AuthSystem {
         this.signupForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const username = document.getElementById('signup-username').value.trim();
-            const email = document.getElementById('signup-email').value.trim();
             const password = document.getElementById('signup-password').value;
             const confirm = document.getElementById('signup-confirm').value;
             
@@ -409,7 +405,7 @@ class AuthSystem {
         }
     }
     
-    async signup(username, email, password, confirm) {
+    async signup(username, password, confirm) {
         // Validate password and confirmation
         if (password !== confirm) {
             this.showAuthMessage('Passwords do not match.');
@@ -436,7 +432,7 @@ class AuthSystem {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ username, email, password })
+                body: JSON.stringify({ username, password })
             });
             
             const data = await response.json();

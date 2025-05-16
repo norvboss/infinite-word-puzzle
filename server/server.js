@@ -1182,7 +1182,6 @@ app.post('/guest-login', (req, res) => {
 // User Schema
 const UserSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
-    email: { type: String, required: true, unique: true },
     password: { type: String, required: true }, // Will be hashed by pre-save hook
     stats: {
         gamesPlayed: { type: Number, default: 0 },
@@ -1223,11 +1222,11 @@ app.post('/register', async (req, res) => {
     console.log("Request body:", req.body);
     
     try {
-        const { username, email, password } = req.body;
+        const { username,  password } = req.body;
         
         // Check if user already exists
         const existingUser = await User.findOne({ 
-            $or: [{ username }, { email }] 
+            $or: [{ username }] 
         });
         
         if (existingUser) {
@@ -1240,7 +1239,6 @@ app.post('/register', async (req, res) => {
         // Create new user
         const user = new User({
             username,
-            email,
             password
         });
         
@@ -1262,7 +1260,6 @@ app.post('/register', async (req, res) => {
                 user: {
                     id: user._id,
                     username: user.username,
-                    email: user.email,
                     stats: user.stats,
                     friends: user.friends
                 }
