@@ -1102,6 +1102,8 @@ console.log(">>> Script start. Preparing MongoDB connection..."); // Add log
 let mongoConnected = false;
 
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/wordleDB', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
     serverSelectionTimeoutMS: 5000, // 5 second timeout for selection
     connectTimeoutMS: 10000 // 10 second timeout for initial connect
 }).then(() => {
@@ -1180,6 +1182,7 @@ app.post('/guest-login', (req, res) => {
 // User Schema
 const UserSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true },
     password: { type: String, required: true }, // Will be hashed by pre-save hook
     stats: {
         gamesPlayed: { type: Number, default: 0 },
@@ -1220,11 +1223,11 @@ app.post('/register', async (req, res) => {
     console.log("Request body:", req.body);
     
     try {
-        const { username,  password } = req.body;
+        const { username, email, password } = req.body;
         
         // Check if user already exists
         const existingUser = await User.findOne({ 
-            $or: [{ username }] 
+            $or: [{ username }, { email }] 
         });
         
         if (existingUser) {
@@ -1237,6 +1240,7 @@ app.post('/register', async (req, res) => {
         // Create new user
         const user = new User({
             username,
+            email,
             password
         });
         
@@ -1258,6 +1262,7 @@ app.post('/register', async (req, res) => {
                 user: {
                     id: user._id,
                     username: user.username,
+                    email: user.email,
                     stats: user.stats,
                     friends: user.friends
                 }
