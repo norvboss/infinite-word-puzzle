@@ -374,81 +374,27 @@ class WordleGame {
     
     // Get the target word, avoiding used words
     getTargetWord() {
-        const MAX_ATTEMPTS = 50; // Safety break for loop
-        let attempts = 0;
-        let targetWord = null;
+        const lengthMap = { easy: 4, medium: 5, hard: 6, expert: 7 };
+        const wordLength = lengthMap[this.difficulty] || 5;
 
-        const lengths = { 'easy': 4, 'medium': 5, 'hard': 6, 'expert': 7 };
-        const targetLength = lengths[this.difficulty] || 5;
-        console.log(`getTargetWord: Seeking ${targetLength}-letter word (difficulty: ${this.difficulty}), used: ${this.usedWords.size}`);
+        let candidates;
 
-        while (attempts < MAX_ATTEMPTS) {
-            attempts++;
-            let candidateWord = null;
-
-            // 1. Try using the global getRandomWord function if it exists
-            if (typeof getRandomWord === 'function') {
-                try {
-                    candidateWord = getRandomWord(this.difficulty);
-                     if (candidateWord && candidateWord.length !== targetLength) {
-                         console.warn(`getRandomWord returned word '${candidateWord}' with incorrect length ${candidateWord.length}, expected ${targetLength}. Ignoring.`);
-                         candidateWord = null; // Ignore if length is wrong
-                     }
-                } catch (error) {
-                    console.error("Error getting word from getRandomWord:", error);
-                    candidateWord = null;
-                }
-            }
-
-            // 2. If no candidate yet, try picking randomly from WORDS_ALPHA
-            if (!candidateWord && window.WORDS_ALPHA && window.WORDS_ALPHA.size > 0) {
-                const wordsByLength = Array.from(window.WORDS_ALPHA).filter(w => w.length === targetLength);
-                if (wordsByLength.length > 0) {
-                    const randomIndex = Math.floor(Math.random() * wordsByLength.length);
-                    candidateWord = wordsByLength[randomIndex];
-                } else {
-                     console.warn(`No words found in WORDS_ALPHA with length ${targetLength}.`);
-                     // Break the loop early if no words of the target length exist
-                     break; 
-                }
-            }
-
-            // 3. Check if the candidate is valid and unused
-            if (candidateWord) {
-                candidateWord = candidateWord.toUpperCase(); // Ensure uppercase
-                if (!this.usedWords.has(candidateWord)) {
-                    targetWord = candidateWord;
-                    console.log(`getTargetWord: Found unused word '${targetWord}' after ${attempts} attempts.`);
-                    break; // Found a suitable word
-                }
-                 // else { console.log(`getTargetWord: Candidate '${candidateWord}' was already used.`); }
-            } else if (attempts === 1) {
-                 // Only log 'no candidate found' on the first attempt if both methods failed
-                 console.warn(`getTargetWord: Could not find any candidate word on attempt ${attempts}.`);
-            }
-        }
-
-        // 4. If no unused word found after max attempts, try fallback
-        if (!targetWord) {
-            console.warn(`getTargetWord: Failed to find an unused ${targetLength}-letter word after ${MAX_ATTEMPTS} attempts. Trying fallback.`);
-            targetWord = this.getFallbackWord(); // Fallback doesn't check usedWords yet
-            
-            // Ideally, fallback should also try to find an unused word, but for simplicity:
-            if (this.usedWords.has(targetWord)) {
-                 console.warn(`Fallback word '${targetWord}' has also been used. Repetition may occur.`);
-            }
-        }
-        
-        // 5. If we have a word, add it to the used set
-        if (targetWord) {
-             targetWord = targetWord.toUpperCase(); // Ensure uppercase before adding/returning
-            this.usedWords.add(targetWord);
-            console.log(`Added '${targetWord}' to usedWords set (new size: ${this.usedWords.size})`);
-            return targetWord;
+        // if dictionary is loaded, use it…
+        if (window.DICTIONARY_LOADED) {
+            // grab only words of the right length
+            candidates = Array.from(window.WORDS_ALPHA).filter(w => w.length === wordLength);
         } else {
-             console.error("getTargetWord: Failed to find ANY target word, even fallback.");
-            return null;
+            // otherwise fall back to your old small list (optional)
+            candidates = this.fallbackWords[wordLength] || [];
+            console.warn('Dictionary not loaded yet — using fallback word list.');
         }
+
+        if (candidates.length === 0) {
+            throw new Error(`No words of length ${wordLength} available!`);
+        }
+
+        // pick one at random
+        return candidates[Math.floor(Math.random() * candidates.length)];
     }
     
     // Get a fallback word if all else fails
