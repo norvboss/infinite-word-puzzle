@@ -1087,7 +1087,7 @@ console.log(">>> Script start. Preparing MongoDB connection..."); // Add log
 // MongoDB Connection - with better error handling
 let mongoConnected = false;
 
-mongoose.connect('mongodb://localhost:27017/wordleDB', {
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/wordleDB', {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     serverSelectionTimeoutMS: 5000, // 5 second timeout for selection

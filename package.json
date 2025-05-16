@@ -2,9 +2,9 @@
   "name": "sandbox",
   "version": "1.0.0",
   "description": "A real-time multiplayer building simulation game where players can collaboratively build and interact in a shared world using WebSocket technology.",
-  "main": "auth.js",
+  "main": "server/server.js",
   "scripts": {
-    "start": "node auth.js",
+    "start": "node server/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
