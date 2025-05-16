@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
-
+require('dotenv').config();
 const app = express();
 const server = http.createServer(app);
 
@@ -1182,7 +1182,6 @@ app.post('/guest-login', (req, res) => {
 // User Schema
 const UserSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
-    email: { type: String, required: true, unique: true },
     password: { type: String, required: true }, // Will be hashed by pre-save hook
     stats: {
         gamesPlayed: { type: Number, default: 0 },
@@ -1190,16 +1189,12 @@ const UserSchema = new mongoose.Schema({
         currentStreak: { type: Number, default: 0 },
         maxStreak: { type: Number, default: 0 },
         totalPoints: { type: Number, default: 0 },
-        highestLevel: { type: Number, default: 1 },    // Added
-        levelProgress: { type: Number, default: 0 },    // Added
-        currentLevel: { type: Number, default: 1 }, // Current single-player level
-        currentLevelProgress: { type: Number, default: 0 } // Words completed in current level
-        // Note: totalPoints already exists and can track overall points.
-        // Consider adding lastPlayed: { type: Date } if needed
+        highestLevel: { type: Number, default: 1 },
+        levelProgress: { type: Number, default: 0 },
+        currentLevel: { type: Number, default: 1 },
+        currentLevelProgress: { type: Number, default: 0 }
     },
-    // Store friend usernames directly for simplicity, or use ObjectIds for references
-    friends: [{ type: String }] // Assuming storing usernames for now
-    // You might add friendRequests fields later if needed
+    friends: [{ type: String }]
 });
 
 // Hash password before saving
@@ -1223,24 +1218,21 @@ app.post('/register', async (req, res) => {
     console.log("Request body:", req.body);
     
     try {
-        const { username, email, password } = req.body;
+        const { username, password } = req.body;
         
         // Check if user already exists
-        const existingUser = await User.findOne({ 
-            $or: [{ username }, { email }] 
-        });
+        const existingUser = await User.findOne({ username });
         
         if (existingUser) {
             console.log("Register: User already exists:", existingUser.username);
             return res.status(400).json({ 
-                error: 'User already exists with that username or email' 
+                error: 'Username already taken' 
             });
         }
         
         // Create new user
         const user = new User({
             username,
-            email,
             password
         });
         
@@ -1252,7 +1244,7 @@ app.post('/register', async (req, res) => {
             // Generate token
             const token = jwt.sign(
                 { id: user._id, username: user.username },
-                'your-secret-key',
+                process.env.JWT_SECRET || 'your-secret-key',
                 { expiresIn: '7d' }
             );
             
@@ -1262,26 +1254,24 @@ app.post('/register', async (req, res) => {
                 user: {
                     id: user._id,
                     username: user.username,
-                    email: user.email,
                     stats: user.stats,
                     friends: user.friends
                 }
             });
         } catch (err) {
-            if (err.code === 11000) {  // MongoDB duplicate key error
+            if (err.code === 11000) {
                 console.log("Register: Duplicate key error detected");
                 return res.status(400).json({
-                    error: 'Username or email already exists'
+                    error: 'Username already exists'
                 });
             }
-            throw err;  // Re-throw other errors
+            throw err;
         }
     } catch (error) {
         console.error("Register error:", error);
         return res.status(500).json({ error: 'Server error' });
     }
 });
-
 app.post('/login', async (req, res) => {
     console.log("--- Received POST /login request ---");
     console.log("Request body:", req.body);
@@ -1310,7 +1300,7 @@ app.post('/login', async (req, res) => {
         // Generate token
         const token = jwt.sign(
             { id: user._id, username: user.username },
-            'your-secret-key',
+            process.env.JWT_SECRET || 'your-secret-key',
             { expiresIn: '7d' }
         );
         
