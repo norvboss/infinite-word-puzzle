@@ -404,6 +404,16 @@ class AuthSystem {
         }
     }
     
+    // Add this function to check for inappropriate language in usernames
+    containsInappropriateLanguage(username) {
+        // Basic client-side check for common inappropriate terms
+        const commonInappropriateTerms = [
+            'badword1', 'badword2', 'slur', 'inappropriate' // Add more as needed
+        ];
+        const normalizedUsername = username.toLowerCase();
+        return commonInappropriateTerms.some(term => normalizedUsername.includes(term));
+    }
+    
     async signup(username, password, confirm) {
         // Validate password and confirmation
         if (password !== confirm) {
@@ -419,6 +429,12 @@ class AuthSystem {
         
         if (password.length < 6) {
             this.showAuthMessage('Password must be at least 6 characters long.');
+            return false;
+        }
+        
+        // Check for inappropriate language
+        if (this.containsInappropriateLanguage(username)) {
+            this.showAuthMessage('Username contains inappropriate language. Please choose another.');
             return false;
         }
         

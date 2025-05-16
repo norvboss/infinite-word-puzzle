@@ -11,6 +11,8 @@ const fs = require('fs');
 require('dotenv').config();
 const app = express();
 const server = http.createServer(app);
+const Filter = require('bad-words');
+const filter = new Filter();
 
 // Configure CORS properly for all origins
 app.use(cors({
@@ -1212,14 +1214,31 @@ UserSchema.pre('save', async function(next) {
 // Create the User model from the schema
 const User = mongoose.model('User', UserSchema);
 
+// Add custom words to filter if needed
+filter.addWords(['someadditionalword', 'anotherword']);
+
+// Custom function to check for evasive inappropriate words
+function checkEvasiveLanguage(username) {
+    const evasivePatterns = [
+        /b+\s*[4a]+\s*d+\s*[w0]+.*r+.*d+/i,  // Matches b4dw0rd and variations
+        // Add more patterns as needed
+    ];
+    return evasivePatterns.some(pattern => pattern.test(username));
+}
+
 // API Routes
 app.post('/register', async (req, res) => {
     console.log("--- Received POST /register request ---");
     console.log("Request body:", req.body);
-    
     try {
         const { username, password } = req.body;
-        
+        // Check for inappropriate username
+        if (filter.isProfane(username) || checkEvasiveLanguage(username)) {
+            console.log("Register: Rejected inappropriate username:", username);
+            return res.status(400).json({ 
+                error: 'Username contains inappropriate language. Please choose another username.' 
+            });
+        }
         // Check if user already exists
         const existingUser = await User.findOne({ username });
         
