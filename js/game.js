@@ -1,4 +1,47 @@
-
+setTimeout(() => {
+    if (!window.S_WORDS_LOADED || window.S_WORDS.size === 0) {
+      console.log("Allowed guess words not loaded yet. Retrying s.txt load...");
+      fetch('s.txt')
+        .then(res => {
+          if (!res.ok) throw new Error(res.statusText);
+          return res.text();
+        })
+        .then(text => {
+          text.split(/\r?\n/).forEach(line => {
+            const w = line.trim().toUpperCase();
+            if (w) window.S_WORDS.add(w);
+          });
+          window.S_WORDS_LOADED = true;
+          console.log(`Retry successful: Loaded ${window.S_WORDS.size} allowed guess words from s.txt`);
+        })
+        .catch(err => {
+          console.error('Error during retry loading s.txt:', err);
+          // Add some fallback allowed guess words if loading still fails
+          addFallbackGuessWords();
+        });
+    }
+  }, 3000);
+  
+  // Add fallback allowed guess words if s.txt fails to load
+  function addFallbackGuessWords() {
+    console.log("Adding fallback allowed guess words");
+    
+    const fallbackGuesses = {
+      // These words would normally be in s.txt
+      4: ['CAKE', 'FISH', 'TIME', 'BALL', 'DUCK', 'FROG', 'JUMP', 'KIND'],
+      5: ['APPLE', 'BEACH', 'CRANE', 'FRESH', 'GRAPE', 'HOUSE', 'LEMON', 'PLANT'],
+      6: ['ADJUST', 'BRONZE', 'CLOUDY', 'FACTOR', 'GLOBAL', 'IMAGES', 'OXYGEN', 'PUZZLE'],
+      7: ['ABANDON', 'BENEATH', 'DISPLAY', 'EXAMPLE', 'FITNESS', 'JOURNEY', 'MANAGER', 'NETWORK']
+    };
+    
+    // Add all fallback allowed guess words to S_WORDS
+    Object.values(fallbackGuesses).flat().forEach(word => {
+      window.S_WORDS.add(word.toUpperCase());
+    });
+    
+    window.S_WORDS_LOADED = true;
+    console.log(`Added ${window.S_WORDS.size} fallback allowed guess words`);
+  }
 window.S_WORDS = new Set();
 window.S_WORDS_LOADED = false;
 
@@ -13,7 +56,7 @@ fetch('s.txt')
       if (w) window.S_WORDS.add(w);
     });
     window.S_WORDS_LOADED = true;
-    console.log(`Loaded ${window.S_WORDS.size} target words from s.txt`);
+    console.log(`Loaded ${window.S_WORDS.size} allowed guess words from s.txt`);
   })
   .catch(err => console.error('Error loading s.txt:', err));
 class WordleGame {
@@ -395,20 +438,39 @@ class WordleGame {
         const lengthMap = { easy: 4, medium: 5, hard: 6, expert: 7 };
         const wordLength = lengthMap[this.difficulty] || 5;
       
-        // ← the only change is here:
-        const source = window.S_WORDS_LOADED
-          ? window.S_WORDS
-          : window.WORDS_ALPHA;
-      
-        const candidates = Array.from(source).filter(w => w.length === wordLength);
-      
-        if (!candidates.length) {
-          console.error(`No words of length ${wordLength}`);
-          return this.getFallbackWord();
+        // ONLY use WORDS_ALPHA for target words, never fall back to S_WORDS
+        if (!window.WORDS_ALPHA || window.WORDS_ALPHA.size === 0) {
+            console.warn("WORDS_ALPHA not loaded yet or empty. Using fallback target word.");
+            return this.getFallbackWord();
         }
       
-        return candidates[Math.floor(Math.random() * candidates.length)];
-      }
+        // Filter words by length and exclude already used words
+        let candidates = Array.from(window.WORDS_ALPHA).filter(w => 
+            w.length === wordLength && 
+            (!this.usedWords || !this.usedWords.has(w))
+        );
+      
+        // If we've used all words of this length, reset and use any word
+        if (!candidates.length) {
+            console.warn(`No unused words of length ${wordLength} in WORDS_ALPHA, allowing reuse`);
+            candidates = Array.from(window.WORDS_ALPHA).filter(w => w.length === wordLength);
+            
+            if (!candidates.length) {
+                console.error(`No words of length ${wordLength} in WORDS_ALPHA at all`);
+                return this.getFallbackWord();
+            }
+        }
+      
+        const word = candidates[Math.floor(Math.random() * candidates.length)];
+        
+        // Add to used words if we're tracking them
+        if (this.usedWords) {
+            this.usedWords.add(word);
+            console.log(`Added "${word}" to used words. Used count: ${this.usedWords.size}`);
+        }
+        
+        return word;
+    }
       
     
     
@@ -471,7 +533,7 @@ class WordleGame {
             };
         }
         
-        const inDict = window.WORDS_ALPHA ? window.WORDS_ALPHA.has(upperWord) : false;
+        const inDict = window.S_WORDS ? window.S_WORDS.has(upperWord) : false;
         const acceptAnyMode = window.ACCEPT_ALL_WORDS || false;
         
         if (!inDict && !acceptAnyMode) {
@@ -572,8 +634,8 @@ class WordleGame {
 
         const upperWord = currentWord.toUpperCase();
         
-        if (window.WORDS_ALPHA && window.WORDS_ALPHA.size > 0) {
-            const inDictionary = window.WORDS_ALPHA.has(upperWord);
+        if (window.S_WORDS && window.S_WORDS.size > 0) {
+            const inDictionary = window.S_WORDS.has(upperWord);
             
             if (!inDictionary) {
                 this.showMessage("Not in word list");
