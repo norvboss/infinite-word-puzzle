@@ -620,6 +620,9 @@ class WordleGame {
         const currentWord = this.getCurrentWord();
         console.log(`CheckWord called with: "${currentWord}" (${currentWord.length} letters), target: ${this.targetWord} (${this.targetWord.length} letters)`);
         
+        // DEBUG - Log difficulty and target word info
+        console.log(`DEBUG: Current difficulty: ${this.difficulty}, Target word length: ${this.targetWord.length}`);
+        
         if (currentWord.length < this.targetWord.length) {
             console.log(`Word "${currentWord}" is too short (${currentWord.length}/${this.targetWord.length})`);
             this.showMessage("Not enough letters");
@@ -634,8 +637,17 @@ class WordleGame {
 
         const upperWord = currentWord.toUpperCase();
         
+        // DEBUG - Log S_WORDS details
+        console.log(`DEBUG: S_WORDS size: ${window.S_WORDS ? window.S_WORDS.size : 'undefined'}`);
+        console.log(`DEBUG: S_WORDS_LOADED: ${window.S_WORDS_LOADED}`);
+        console.log(`DEBUG: Checking if "${upperWord}" is in S_WORDS`);
+        
         if (window.S_WORDS && window.S_WORDS.size > 0) {
+            // Debug log for first 20 words in S_WORDS
+            console.log("DEBUG: First 20 words in S_WORDS:", Array.from(window.S_WORDS).slice(0, 20));
+            
             const inDictionary = window.S_WORDS.has(upperWord);
+            console.log(`DEBUG: "${upperWord}" in S_WORDS: ${inDictionary}`);
             
             if (!inDictionary) {
                 this.showMessage("Not in word list");
@@ -643,7 +655,9 @@ class WordleGame {
             }
         } 
         else if (typeof window.isWordInDictionary === 'function') {
+            console.log(`DEBUG: Using isWordInDictionary function`);
             const isValid = window.isWordInDictionary(currentWord);
+            console.log(`DEBUG: isWordInDictionary("${currentWord}") returned: ${isValid}`);
             
             if (!isValid) {
                 this.showMessage("Not in word list");
