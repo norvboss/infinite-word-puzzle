@@ -22,6 +22,8 @@ wind
 tree
 soft
 warm
+
+5-letter words:
 apple
 brave
 chase
@@ -47,6 +49,8 @@ voice
 world
 youth
 zebra
+
+6-letter words:
 animal
 butter
 circle
@@ -72,6 +76,8 @@ window
 yellow
 zipper
 beacon
+
+7-letter words:
 amazing
 blanket
 captain
@@ -97,3 +103,4 @@ vehicle
 welcome
 zeppelin
 antenna
+
