@@ -414,6 +414,13 @@ io.on('connection', (socket) => {
             return;
         }
 
+        // Verify word is in dictionary
+        if (!S_WORDS.has(submittedGuess)) {
+            console.error(`Invalid guess: "${submittedGuess}" not found in dictionary`);
+            socket.emit('guess_error', { message: 'Not in word list' });
+            return;
+        }
+
         // Get player username
         const username = socketUserMap.get(socket.id);
         if (!username) {
