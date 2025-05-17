@@ -398,10 +398,18 @@ class MultiplayerGameUI {
                 return false;
             }
             
-            // *** CRITICAL FIX: DISABLE CLIENT-SIDE DICTIONARY CHECK ***
-            // Skip client-side dictionary validation to ensure all valid words are accepted
-            // Let the server validate against the proper dictionary
-            this.log("Bypassing client-side dictionary validation, sending guess to server");
+            // Validate the word is in the dictionary before submitting
+            if (typeof window.WORDS_ALPHA !== 'undefined' && window.WORDS_ALPHA.size > 0) {
+                const isInDictionary = window.WORDS_ALPHA.has(this.currentGuess.toUpperCase());
+                if (!isInDictionary) {
+                    console.error(`Word "${this.currentGuess}" not in dictionary`);
+                    this.showMessage("Not in word list");
+                    this.shakeCurrentRow();
+                    return false;
+                }
+            } else {
+                this.log("Dictionary not loaded, skipping client-side validation");
+            }
             
             // Check if this guess was just submitted (within last 2 seconds)
             const currentTime = Date.now();
@@ -1079,18 +1087,18 @@ class MultiplayerGameUI {
         console.log("Socket Game ID:", window.multiplayerSocket ? window.multiplayerSocket.gameId : null);
         console.log("Config:", config);
         
-        // Check dictionary status using S_WORDS for allowed guesses
-        const dictStatus = typeof window.S_WORDS !== 'undefined' && window.S_WORDS.size > 0 
-            ? `Loaded (${window.S_WORDS.size} words)` 
-            : 'Not loaded (S_WORDS)'; // Indicate which dictionary is being checked
-        console.log("Allowed Guesses Dictionary Status (S_WORDS):", dictStatus);
+        // Check dictionary status
+        const dictStatus = typeof window.WORDS_ALPHA !== 'undefined' && window.WORDS_ALPHA.size > 0 
+            ? `Loaded (${window.WORDS_ALPHA.size} words)` 
+            : 'Not loaded';
+        console.log("Dictionary Status:", dictStatus);
         
-        // Test a few sample words against S_WORDS
-        if (typeof window.S_WORDS !== 'undefined' && window.S_WORDS.size > 0) {
-            const testWords = ['APPLE', 'HELLO', 'WORLD', 'DANCE', 'REACT', 'ARISE']; // Added ARISE
-            console.log("Allowed Guesses Dictionary (S_WORDS) sample tests:");
+        // Test a few sample words
+        if (typeof window.WORDS_ALPHA !== 'undefined' && window.WORDS_ALPHA.size > 0) {
+            const testWords = ['APPLE', 'HELLO', 'WORLD', 'DANCE', 'REACT'];
+            console.log("Dictionary sample tests:");
             testWords.forEach(word => {
-                console.log(`- "${word}": ${window.S_WORDS.has(word.toUpperCase()) ? 'Found' : 'Not found'}`);
+                console.log(`- "${word}": ${window.WORDS_ALPHA.has(word) ? 'Found' : 'Not found'}`);
             });
         }
         
@@ -1101,7 +1109,7 @@ class MultiplayerGameUI {
             this.log(`Difficulty: ${config.difficulty || 'Not specified'}`);
             this.log(`Socket Connected: ${window.multiplayerSocket ? window.multiplayerSocket.connected : false}`);
             this.log(`Socket Game ID: ${window.multiplayerSocket ? window.multiplayerSocket.gameId : 'Not set'}`);
-            this.log(`Allowed Guesses Dictionary (S_WORDS): ${dictStatus}`);
+            this.log(`Dictionary: ${dictStatus}`);
         }
     }
 
@@ -1238,28 +1246,34 @@ class MultiplayerGameUI {
 
     // Ensure dictionary is loaded for word validation
     ensureDictionaryLoaded() {
-        // Check S_WORDS for allowed guesses
-        if (typeof window.S_WORDS === 'undefined' || !window.S_WORDS || window.S_WORDS.size === 0) {
-            console.warn("Allowed Guesses Dictionary (S_WORDS) not loaded. Attempting to load scripts.");
+        if (typeof window.WORDS_ALPHA === 'undefined' || !window.WORDS_ALPHA || window.WORDS_ALPHA.size === 0) {
+            console.warn("Dictionary not loaded, creating fallback dictionary");
             
-            // Attempt to load dictionary scripts which should populate S_WORDS
-            // words-alpha.js is responsible for loading S_WORDS
-            if (typeof loadDictionary === 'function') {
-                // If loadDictionary from words-alpha.js is available
-                console.log("Calling loadDictionary() from words-alpha.js to load S_WORDS");
-                loadDictionary(); 
+            // Create a minimal dictionary if none exists
+            window.WORDS_ALPHA = window.WORDS_ALPHA || new Set();
+            
+            // Add some common 4-7 letter words
+            const commonWords = {
+                4: ['ABLE', 'ACID', 'ACNE', 'AGED', 'ALSO', 'APEX', 'AQUA', 'ARCH', 'ARMY', 'AUNT', 'AUTO', 'AWAY', 'AXIS', 'BABY', 'BACK', 'BALD', 'BALL', 'BAND', 'BANK', 'BASE'],
+                5: ['ABOUT', 'ABOVE', 'ABUSE', 'ACTOR', 'ADAPT', 'ADMIT', 'ADOBE', 'ADOPT', 'AFTER', 'AGAIN', 'AGENT', 'AGREE', 'AHEAD', 'ALBUM', 'ALERT', 'APPLE', 'ARENA', 'ARGUE', 'ARISE', 'ARRAY'],
+                6: ['ABSENT', 'ABSORB', 'ACCEPT', 'ACCESS', 'ACCUSE', 'ACROSS', 'ACTION', 'ACTIVE', 'ACTUAL', 'ADJUST', 'ADMIRE', 'ADSORB', 'ADVISE', 'AFFAIR', 'AFFECT', 'AFFORD', 'AFRAID', 'AGENCY', 'AGENDA', 'ALMOST'],
+                7: ['ABANDON', 'ABILITY', 'ABSENCE', 'ABSOLVE', 'ABSORBS', 'ACCEPTS', 'ACCLAIM', 'ACCOUNT', 'ACCUSES', 'ACHIEVE', 'ACQUIRE', 'ADDRESS', 'ADVANCE', 'ADVERSE', 'ADVISED', 'ADVISER', 'AFFAIRS', 'AFFECTS', 'AGAINST', 'AIRLINE']
+            };
+            
+            // Add words to global set
+            Object.values(commonWords).forEach(wordList => {
+                wordList.forEach(word => window.WORDS_ALPHA.add(word));
+            });
+            
+            // Log what we did
+            if (typeof this.log === 'function') {
+                this.log(`Created fallback dictionary with ${window.WORDS_ALPHA.size} words`);
             } else {
-                // Fallback to trying to load the script if the function isn't globally available yet
-                this.loadDictionaryScript(); // This tries to load dictionary.js then words-alpha.js
+                console.log(`Created fallback dictionary with ${window.WORDS_ALPHA.size} words`);
             }
-
-            // Note: Fallback dictionary creation here might be problematic if it overwrites S_WORDS
-            // or creates a different dictionary. The primary reliance should be on words-alpha.js
-            // correctly populating window.S_WORDS.
-            // For now, removing the direct manipulation of a fallback WORDS_ALPHA here,
-            // as S_WORDS is the target for guess validation.
-        } else {
-            console.log("Allowed Guesses Dictionary (S_WORDS) appears to be loaded.");
+            
+            // Try to load dictionary.js or words-alpha.js
+            this.loadDictionaryScript();
         }
     }
     

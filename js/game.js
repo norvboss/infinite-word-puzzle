@@ -1,64 +1,3 @@
-setTimeout(() => {
-    if (!window.S_WORDS_LOADED || window.S_WORDS.size === 0) {
-      console.log("Allowed guess words not loaded yet. Retrying s.txt load...");
-      fetch('s.txt')
-        .then(res => {
-          if (!res.ok) throw new Error(res.statusText);
-          return res.text();
-        })
-        .then(text => {
-          text.split(/\r?\n/).forEach(line => {
-            const w = line.trim().toUpperCase();
-            if (w) window.S_WORDS.add(w);
-          });
-          window.S_WORDS_LOADED = true;
-          console.log(`Retry successful: Loaded ${window.S_WORDS.size} allowed guess words from s.txt`);
-        })
-        .catch(err => {
-          console.error('Error during retry loading s.txt:', err);
-          // Add some fallback allowed guess words if loading still fails
-          addFallbackGuessWords();
-        });
-    }
-  }, 3000);
-  
-  // Add fallback allowed guess words if s.txt fails to load
-  function addFallbackGuessWords() {
-    console.log("Adding fallback allowed guess words");
-    
-    const fallbackGuesses = {
-      // These words would normally be in s.txt
-      4: ['CAKE', 'FISH', 'TIME', 'BALL', 'DUCK', 'FROG', 'JUMP', 'KIND'],
-      5: ['APPLE', 'BEACH', 'CRANE', 'FRESH', 'GRAPE', 'HOUSE', 'LEMON', 'PLANT'],
-      6: ['ADJUST', 'BRONZE', 'CLOUDY', 'FACTOR', 'GLOBAL', 'IMAGES', 'OXYGEN', 'PUZZLE'],
-      7: ['ABANDON', 'BENEATH', 'DISPLAY', 'EXAMPLE', 'FITNESS', 'JOURNEY', 'MANAGER', 'NETWORK']
-    };
-    
-    // Add all fallback allowed guess words to S_WORDS
-    Object.values(fallbackGuesses).flat().forEach(word => {
-      window.S_WORDS.add(word.toUpperCase());
-    });
-    
-    window.S_WORDS_LOADED = true;
-    console.log(`Added ${window.S_WORDS.size} fallback allowed guess words`);
-  }
-window.S_WORDS = new Set();
-window.S_WORDS_LOADED = false;
-
-fetch('s.txt')
-  .then(res => {
-    if (!res.ok) throw new Error(res.statusText);
-    return res.text();
-  })
-  .then(text => {
-    text.split(/\r?\n/).forEach(line => {
-      const w = line.trim().toUpperCase();
-      if (w) window.S_WORDS.add(w);
-    });
-    window.S_WORDS_LOADED = true;
-    console.log(`Loaded ${window.S_WORDS.size} allowed guess words from s.txt`);
-  })
-  .catch(err => console.error('Error loading s.txt:', err));
 class WordleGame {
     constructor(gameContentContainer) {
         console.log("WordleGame constructor called, container:", gameContentContainer);
@@ -435,44 +374,82 @@ class WordleGame {
     
     // Get the target word, avoiding used words
     getTargetWord() {
-        const lengthMap = { easy: 4, medium: 5, hard: 6, expert: 7 };
-        const wordLength = lengthMap[this.difficulty] || 5;
-      
-        // ONLY use WORDS_ALPHA for target words, never fall back to S_WORDS
-        if (!window.WORDS_ALPHA || window.WORDS_ALPHA.size === 0) {
-            console.warn("WORDS_ALPHA not loaded yet or empty. Using fallback target word.");
-            return this.getFallbackWord();
-        }
-      
-        // Filter words by length and exclude already used words
-        let candidates = Array.from(window.WORDS_ALPHA).filter(w => 
-            w.length === wordLength && 
-            (!this.usedWords || !this.usedWords.has(w))
-        );
-      
-        // If we've used all words of this length, reset and use any word
-        if (!candidates.length) {
-            console.warn(`No unused words of length ${wordLength} in WORDS_ALPHA, allowing reuse`);
-            candidates = Array.from(window.WORDS_ALPHA).filter(w => w.length === wordLength);
-            
-            if (!candidates.length) {
-                console.error(`No words of length ${wordLength} in WORDS_ALPHA at all`);
-                return this.getFallbackWord();
+        const MAX_ATTEMPTS = 50; // Safety break for loop
+        let attempts = 0;
+        let targetWord = null;
+
+        const lengths = { 'easy': 4, 'medium': 5, 'hard': 6, 'expert': 7 };
+        const targetLength = lengths[this.difficulty] || 5;
+        console.log(`getTargetWord: Seeking ${targetLength}-letter word (difficulty: ${this.difficulty}), used: ${this.usedWords.size}`);
+
+        while (attempts < MAX_ATTEMPTS) {
+            attempts++;
+            let candidateWord = null;
+
+            // 1. Try using the global getRandomWord function if it exists
+            if (typeof getRandomWord === 'function') {
+                try {
+                    candidateWord = getRandomWord(this.difficulty);
+                     if (candidateWord && candidateWord.length !== targetLength) {
+                         console.warn(`getRandomWord returned word '${candidateWord}' with incorrect length ${candidateWord.length}, expected ${targetLength}. Ignoring.`);
+                         candidateWord = null; // Ignore if length is wrong
+                     }
+                } catch (error) {
+                    console.error("Error getting word from getRandomWord:", error);
+                    candidateWord = null;
+                }
+            }
+
+            // 2. If no candidate yet, try picking randomly from WORDS_ALPHA
+            if (!candidateWord && window.WORDS_ALPHA && window.WORDS_ALPHA.size > 0) {
+                const wordsByLength = Array.from(window.WORDS_ALPHA).filter(w => w.length === targetLength);
+                if (wordsByLength.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * wordsByLength.length);
+                    candidateWord = wordsByLength[randomIndex];
+                } else {
+                     console.warn(`No words found in WORDS_ALPHA with length ${targetLength}.`);
+                     // Break the loop early if no words of the target length exist
+                     break; 
+                }
+            }
+
+            // 3. Check if the candidate is valid and unused
+            if (candidateWord) {
+                candidateWord = candidateWord.toUpperCase(); // Ensure uppercase
+                if (!this.usedWords.has(candidateWord)) {
+                    targetWord = candidateWord;
+                    console.log(`getTargetWord: Found unused word '${targetWord}' after ${attempts} attempts.`);
+                    break; // Found a suitable word
+                }
+                 // else { console.log(`getTargetWord: Candidate '${candidateWord}' was already used.`); }
+            } else if (attempts === 1) {
+                 // Only log 'no candidate found' on the first attempt if both methods failed
+                 console.warn(`getTargetWord: Could not find any candidate word on attempt ${attempts}.`);
             }
         }
-      
-        const word = candidates[Math.floor(Math.random() * candidates.length)];
-        
-        // Add to used words if we're tracking them
-        if (this.usedWords) {
-            this.usedWords.add(word);
-            console.log(`Added "${word}" to used words. Used count: ${this.usedWords.size}`);
+
+        // 4. If no unused word found after max attempts, try fallback
+        if (!targetWord) {
+            console.warn(`getTargetWord: Failed to find an unused ${targetLength}-letter word after ${MAX_ATTEMPTS} attempts. Trying fallback.`);
+            targetWord = this.getFallbackWord(); // Fallback doesn't check usedWords yet
+            
+            // Ideally, fallback should also try to find an unused word, but for simplicity:
+            if (this.usedWords.has(targetWord)) {
+                 console.warn(`Fallback word '${targetWord}' has also been used. Repetition may occur.`);
+            }
         }
         
-        return word;
+        // 5. If we have a word, add it to the used set
+        if (targetWord) {
+             targetWord = targetWord.toUpperCase(); // Ensure uppercase before adding/returning
+            this.usedWords.add(targetWord);
+            console.log(`Added '${targetWord}' to usedWords set (new size: ${this.usedWords.size})`);
+            return targetWord;
+        } else {
+             console.error("getTargetWord: Failed to find ANY target word, even fallback.");
+            return null;
+        }
     }
-      
-    
     
     // Get a fallback word if all else fails
     getFallbackWord() {
@@ -533,7 +510,7 @@ class WordleGame {
             };
         }
         
-        const inDict = window.S_WORDS ? window.S_WORDS.has(upperWord) : false;
+        const inDict = window.WORDS_ALPHA ? window.WORDS_ALPHA.has(upperWord) : false;
         const acceptAnyMode = window.ACCEPT_ALL_WORDS || false;
         
         if (!inDict && !acceptAnyMode) {
@@ -620,9 +597,6 @@ class WordleGame {
         const currentWord = this.getCurrentWord();
         console.log(`CheckWord called with: "${currentWord}" (${currentWord.length} letters), target: ${this.targetWord} (${this.targetWord.length} letters)`);
         
-        // DEBUG - Log difficulty and target word info
-        console.log(`DEBUG: Current difficulty: ${this.difficulty}, Target word length: ${this.targetWord.length}`);
-        
         if (currentWord.length < this.targetWord.length) {
             console.log(`Word "${currentWord}" is too short (${currentWord.length}/${this.targetWord.length})`);
             this.showMessage("Not enough letters");
@@ -637,17 +611,8 @@ class WordleGame {
 
         const upperWord = currentWord.toUpperCase();
         
-        // DEBUG - Log S_WORDS details
-        console.log(`DEBUG: S_WORDS size: ${window.S_WORDS ? window.S_WORDS.size : 'undefined'}`);
-        console.log(`DEBUG: S_WORDS_LOADED: ${window.S_WORDS_LOADED}`);
-        console.log(`DEBUG: Checking if "${upperWord}" is in S_WORDS`);
-        
-        if (window.S_WORDS && window.S_WORDS.size > 0) {
-            // Debug log for first 20 words in S_WORDS
-            console.log("DEBUG: First 20 words in S_WORDS:", Array.from(window.S_WORDS).slice(0, 20));
-            
-            const inDictionary = window.S_WORDS.has(upperWord);
-            console.log(`DEBUG: "${upperWord}" in S_WORDS: ${inDictionary}`);
+        if (window.WORDS_ALPHA && window.WORDS_ALPHA.size > 0) {
+            const inDictionary = window.WORDS_ALPHA.has(upperWord);
             
             if (!inDictionary) {
                 this.showMessage("Not in word list");
@@ -655,9 +620,7 @@ class WordleGame {
             }
         } 
         else if (typeof window.isWordInDictionary === 'function') {
-            console.log(`DEBUG: Using isWordInDictionary function`);
             const isValid = window.isWordInDictionary(currentWord);
-            console.log(`DEBUG: isWordInDictionary("${currentWord}") returned: ${isValid}`);
             
             if (!isValid) {
                 this.showMessage("Not in word list");

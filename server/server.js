@@ -9,136 +9,6 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 
-// Load target words from words_alpha.txt
-const WORDS_ALPHA = new Map();
-const WORDS_ALPHA_BY_LENGTH = {
-  4: [], 5: [], 6: [], 7: []
-};
-
-// Path to words_alpha.txt is relative to server directory
-const words_alpha_path = path.join(__dirname, '../words_alpha.txt');
-
-try {
-  const wordData = fs.readFileSync(words_alpha_path, 'utf8');
-  const words = wordData.split(/\r?\n/).map(w => w.trim().toUpperCase()).filter(w => w.length > 0);
-  
-  console.log(`Loaded ${words.length} words from words_alpha.txt`);
-  
-  // Add words to the collection and organize by length
-  words.forEach(word => {
-    WORDS_ALPHA.set(word, true);
-    if (word.length >= 4 && word.length <= 7) {
-      WORDS_ALPHA_BY_LENGTH[word.length].push(word);
-    }
-  });
-  
-  // Log summary of words by length
-  Object.keys(WORDS_ALPHA_BY_LENGTH).forEach(length => {
-    console.log(`Words with ${length} letters: ${WORDS_ALPHA_BY_LENGTH[length].length}`);
-  });
-} catch (err) {
-  console.error('Error loading words_alpha.txt:', err);
-  console.log('Will use fallback word lists instead');
-}
-
-// Load allowed guess words from s.txt
-const S_WORDS = new Map();
-
-// Path to s.txt is relative to server directory
-const s_txt_path = path.join(__dirname, '../s.txt');
-
-try {
-  const wordData = fs.readFileSync(s_txt_path, 'utf8');
-  const words = wordData.split(/\r?\n/).map(w => w.trim().toUpperCase()).filter(w => w.length > 0);
-  
-  console.log(`Loaded ${words.length} allowed guess words from s.txt`);
-  
-  // Add words to the collection - CRITICAL FIX: Store the word as BOTH key and value
-  words.forEach(word => {
-    S_WORDS.set(word, word);  // Changed from set(word, true) to set(word, word)
-  });
-  
-  // Verify some common words were loaded
-  const testWords = ['HOUSE', 'PLATE', 'EAGLE', 'WATER', 'APPLE'];
-  testWords.forEach(word => {
-    console.log(`Test word "${word}" in dictionary: ${S_WORDS.has(word)}`);
-  });
-  
-} catch (err) {
-  console.error('Error loading s.txt:', err);
-  console.log('Will use words_alpha for guesses as well');
-  // If s.txt fails to load, just use words_alpha for guesses too
-  if (WORDS_ALPHA.size > 0) {
-    // Clear S_WORDS and copy entries from WORDS_ALPHA instead of trying to reassign
-    S_WORDS.clear();
-    for (const [word, _] of WORDS_ALPHA.entries()) {
-      S_WORDS.set(word, word);  // Store the word as BOTH key and value
-    }
-    console.log(`Using words_alpha (${WORDS_ALPHA.size} words) for allowed guesses`);
-    
-    // Verify some common words were loaded
-    const testWords = ['HOUSE', 'PLATE', 'EAGLE', 'WATER', 'APPLE'];
-    testWords.forEach(word => {
-      console.log(`Test word "${word}" in dictionary: ${S_WORDS.has(word)}`);
-    });
-  }
-}
-
-// Helper function to validate if a word is in the dictionary
-// This handles normalization and provides better logging
-function isValidGuess(word) {
-  if (!word) return false;
-  
-  const upperWord = word.toUpperCase().trim();
-  
-  // Check if the word is in S_WORDS
-  const isValid = S_WORDS.has(upperWord);
-  
-  if (isValid) {
-    console.log(`Word "${upperWord}" found in dictionary`);
-    return true;
-  }
-  
-  // Try with normalization in case there are encoding issues
-  const normalizedWord = upperWord.normalize();
-  if (normalizedWord !== upperWord && S_WORDS.has(normalizedWord)) {
-    console.log(`Word "${upperWord}" found in dictionary after normalization`);
-    return true;
-  }
-  
-  // For debugging: try to see if we have the word in WORDS_ALPHA instead
-  if (WORDS_ALPHA.has(upperWord)) {
-    console.log(`NOTE: Word "${upperWord}" found in WORDS_ALPHA but not in S_WORDS`);
-  }
-  
-  console.log(`Word "${upperWord}" NOT found in dictionary (S_WORDS size: ${S_WORDS.size})`);
-  return false;
-}
-
-// Helper function to dump a sample of words from the dictionary
-function dumpDictionarySample(length) {
-  console.log(`=== DUMPING SAMPLE OF ${length}-LETTER WORDS FROM DICTIONARY ===`);
-  let count = 0;
-  let sample = [];
-  
-  // Collect sample of words with the specified length
-  for (const [word, _] of S_WORDS.entries()) {
-    if (word.length === length) {
-      sample.push(word);
-      count++;
-      if (count >= 10) break;
-    }
-  }
-  
-  if (sample.length > 0) {
-    console.log(`Found ${sample.length} ${length}-letter words in dictionary. Sample: ${sample.join(', ')}`);
-  } else {
-    console.log(`No ${length}-letter words found in dictionary!`);
-  }
-  
-  console.log('=== END OF DICTIONARY SAMPLE ===');
-}
-
 const app = express();
 const server = http.createServer(app);
 
@@ -242,16 +112,7 @@ function getRandomWord(difficulty) {
   // Default to medium if difficulty is not specified
   const wordLength = wordLengths[difficulty] || 5;
   
-  // First try to use words from words_alpha.txt organized by length
-  if (WORDS_ALPHA_BY_LENGTH[wordLength] && WORDS_ALPHA_BY_LENGTH[wordLength].length > 0) {
-    const wordsForLength = WORDS_ALPHA_BY_LENGTH[wordLength];
-    const randomIndex = Math.floor(Math.random() * wordsForLength.length);
-    const selectedWord = wordsForLength[randomIndex];
-    console.log(`Selected word from words_alpha.txt for ${difficulty}: ${selectedWord}`);
-    return selectedWord;
-  }
-  
-  // Fallback words for each difficulty level
+  // Expanded list of real English words for each difficulty level
   const realWords = {
     'easy': [
       'CAKE', 'FISH', 'TIME', 'BALL', 'DUCK', 'FROG', 'JUMP', 'KIND', 'LAKE', 'MOON', 
@@ -478,41 +339,12 @@ io.on('connection', (socket) => {
 
         const targetWord = gameData.targetWord.toUpperCase();
         const submittedGuess = guess.toUpperCase();
-        
+
         // Verify guess length
         if (submittedGuess.length !== targetWord.length) {
             console.error(`Invalid guess length. Expected ${targetWord.length}, got ${submittedGuess.length}`);
             socket.emit('guess_error', { message: `Invalid guess length. Expected ${targetWord.length}, got ${submittedGuess.length}` });
             return;
-        }
-
-        // DIRECT DICTIONARY CHECK - Simplest and most reliable approach
-        const isInDictionary = S_WORDS.has(submittedGuess);
-        console.log(`Dictionary check: "${submittedGuess}" found in dictionary: ${isInDictionary}`);
-        
-        if (!isInDictionary) {
-            // Try the target word too (for compatibility)
-            if (submittedGuess === targetWord) {
-                console.log(`Word "${submittedGuess}" is the target word, allowing it anyway`);
-            } else {
-                console.error(`Invalid guess: "${submittedGuess}" not found in dictionary (S_WORDS size: ${S_WORDS.size})`);
-                
-                // Only do this diagnostic dump once in a while to avoid spamming logs
-                if (Math.random() < 0.1) { // Only 10% of the time
-                    // Dump the first few items from S_WORDS to debug its structure
-                    console.log("=== S_WORDS DEBUG SAMPLE ===");
-                    let count = 0;
-                    for (const [key, value] of S_WORDS.entries()) {
-                        console.log(`S_WORDS entry ${count}: key="${key}", value="${value}"`);
-                        count++;
-                        if (count >= 5) break;
-                    }
-                    console.log("=== END DEBUG SAMPLE ===");
-                }
-                
-                socket.emit('guess_error', { message: 'Not in word list' });
-                return;
-            }
         }
 
         // Get player username
@@ -1241,12 +1073,6 @@ function checkPendingChallenges(username) {
 }
 
 function storeActiveGame(gameId, data) {
-    // Make sure the target word is always a valid guess, even if it's not in the dictionary
-    if (data.targetWord && !S_WORDS.has(data.targetWord)) {
-        console.log(`Adding target word "${data.targetWord}" to dictionary to ensure it's always a valid guess`);
-        S_WORDS.set(data.targetWord, data.targetWord);
-    }
-    
     activeGames.set(gameId, data);
     console.log(`Stored active game ${gameId} with target word ${data.targetWord}`);
 }
