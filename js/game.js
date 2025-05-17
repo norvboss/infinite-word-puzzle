@@ -395,7 +395,7 @@ class WordleGame {
         const lengthMap = { easy: 4, medium: 5, hard: 6, expert: 7 };
         const wordLength = lengthMap[this.difficulty] || 5;
       
-        // once s.txt is loaded, use it; otherwise fall back
+        // ← the only change is here:
         const source = window.S_WORDS_LOADED
           ? window.S_WORDS
           : window.WORDS_ALPHA;
@@ -404,13 +404,12 @@ class WordleGame {
       
         if (!candidates.length) {
           console.error(`No words of length ${wordLength}`);
-          return this.getFallbackWord();  // or however you handle it today
+          return this.getFallbackWord();
         }
       
-        const choice = candidates[Math.floor(Math.random() * candidates.length)];
-        console.log("Target:", choice);
-        return choice;
+        return candidates[Math.floor(Math.random() * candidates.length)];
       }
+      
     
     
     // Get a fallback word if all else fails
