@@ -62,9 +62,68 @@ try {
   console.log('Will use words_alpha for guesses as well');
   // If s.txt fails to load, just use words_alpha for guesses too
   if (WORDS_ALPHA.size > 0) {
-    S_WORDS = WORDS_ALPHA;
-    console.log('Using words_alpha for allowed guesses');
+    // Clear S_WORDS and copy entries from WORDS_ALPHA instead of trying to reassign
+    S_WORDS.clear();
+    for (const [word, _] of WORDS_ALPHA.entries()) {
+      S_WORDS.set(word, true);
+    }
+    console.log(`Using words_alpha (${WORDS_ALPHA.size} words) for allowed guesses`);
   }
+}
+
+// Helper function to validate if a word is in the dictionary
+// This handles normalization and provides better logging
+function isValidGuess(word) {
+  if (!word) return false;
+  
+  const upperWord = word.toUpperCase().trim();
+  
+  // Check if the word is in S_WORDS
+  const isValid = S_WORDS.has(upperWord);
+  
+  if (isValid) {
+    console.log(`Word "${upperWord}" found in dictionary`);
+    return true;
+  }
+  
+  // Try with normalization in case there are encoding issues
+  const normalizedWord = upperWord.normalize();
+  if (normalizedWord !== upperWord && S_WORDS.has(normalizedWord)) {
+    console.log(`Word "${upperWord}" found in dictionary after normalization`);
+    return true;
+  }
+  
+  // For debugging: try to see if we have the word in WORDS_ALPHA instead
+  if (WORDS_ALPHA.has(upperWord)) {
+    console.log(`NOTE: Word "${upperWord}" found in WORDS_ALPHA but not in S_WORDS`);
+  }
+  
+  console.log(`Word "${upperWord}" NOT found in dictionary (S_WORDS size: ${S_WORDS.size})`);
+  return false;
+}
+
+// Helper function to dump a sample of words from the dictionary
+function dumpDictionarySample(length) {
+  console.log(`=== DUMPING SAMPLE OF ${length}-LETTER WORDS FROM DICTIONARY ===`);
+  let count = 0;
+  let sample = [];
+  
+  // Collect sample of words with the specified length
+  for (const [word, _] of S_WORDS.entries()) {
+    if (word.length === length) {
+      sample.push(word);
+      count++;
+      if (count >= 10) break;
+    }
+  }
+  
+  if (sample.length > 0) {
+    console.log(`Found ${sample.length} ${length}-letter words in dictionary. Sample: ${sample.join(', ')}`);
+  } else {
+    console.log(`No ${length}-letter words found in dictionary!`);
+  }
+  
+  console.log('=== END OF DICTIONARY SAMPLE ===');
 }
 
 const app = express();
@@ -406,6 +465,9 @@ io.on('connection', (socket) => {
 
         const targetWord = gameData.targetWord.toUpperCase();
         const submittedGuess = guess.toUpperCase();
+        
+        // Debug dictionary status - simplified
+        console.log(`Dictionary validation: Checking "${submittedGuess}" against dictionary (S_WORDS size: ${S_WORDS.size})`);
 
         // Verify guess length
         if (submittedGuess.length !== targetWord.length) {
@@ -414,9 +476,13 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // Verify word is in dictionary
-        if (!S_WORDS.has(submittedGuess)) {
+        // Verify word is in dictionary using our helper function
+        if (!isValidGuess(submittedGuess)) {
             console.error(`Invalid guess: "${submittedGuess}" not found in dictionary`);
+            
+            // Dump a sample of the dictionary for this word length for debugging
+            dumpDictionarySample(submittedGuess.length);
+            
             socket.emit('guess_error', { message: 'Not in word list' });
             return;
         }
