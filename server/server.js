@@ -9,6 +9,64 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 
+// Load target words from words_alpha.txt
+const WORDS_ALPHA = new Map();
+const WORDS_ALPHA_BY_LENGTH = {
+  4: [], 5: [], 6: [], 7: []
+};
+
+// Path to words_alpha.txt is relative to server directory
+const words_alpha_path = path.join(__dirname, '../words_alpha.txt');
+
+try {
+  const wordData = fs.readFileSync(words_alpha_path, 'utf8');
+  const words = wordData.split(/\r?\n/).map(w => w.trim().toUpperCase()).filter(w => w.length > 0);
+  
+  console.log(`Loaded ${words.length} words from words_alpha.txt`);
+  
+  // Add words to the collection and organize by length
+  words.forEach(word => {
+    WORDS_ALPHA.set(word, true);
+    if (word.length >= 4 && word.length <= 7) {
+      WORDS_ALPHA_BY_LENGTH[word.length].push(word);
+    }
+  });
+  
+  // Log summary of words by length
+  Object.keys(WORDS_ALPHA_BY_LENGTH).forEach(length => {
+    console.log(`Words with ${length} letters: ${WORDS_ALPHA_BY_LENGTH[length].length}`);
+  });
+} catch (err) {
+  console.error('Error loading words_alpha.txt:', err);
+  console.log('Will use fallback word lists instead');
+}
+
+// Load allowed guess words from s.txt
+const S_WORDS = new Map();
+
+// Path to s.txt is relative to server directory
+const s_txt_path = path.join(__dirname, '../s.txt');
+
+try {
+  const wordData = fs.readFileSync(s_txt_path, 'utf8');
+  const words = wordData.split(/\r?\n/).map(w => w.trim().toUpperCase()).filter(w => w.length > 0);
+  
+  console.log(`Loaded ${words.length} allowed guess words from s.txt`);
+  
+  // Add words to the collection
+  words.forEach(word => {
+    S_WORDS.set(word, true);
+  });
+} catch (err) {
+  console.error('Error loading s.txt:', err);
+  console.log('Will use words_alpha for guesses as well');
+  // If s.txt fails to load, just use words_alpha for guesses too
+  if (WORDS_ALPHA.size > 0) {
+    S_WORDS = WORDS_ALPHA;
+    console.log('Using words_alpha for allowed guesses');
+  }
+}
+
 const app = express();
 const server = http.createServer(app);
 
@@ -112,7 +170,16 @@ function getRandomWord(difficulty) {
   // Default to medium if difficulty is not specified
   const wordLength = wordLengths[difficulty] || 5;
   
-  // Expanded list of real English words for each difficulty level
+  // First try to use words from words_alpha.txt organized by length
+  if (WORDS_ALPHA_BY_LENGTH[wordLength] && WORDS_ALPHA_BY_LENGTH[wordLength].length > 0) {
+    const wordsForLength = WORDS_ALPHA_BY_LENGTH[wordLength];
+    const randomIndex = Math.floor(Math.random() * wordsForLength.length);
+    const selectedWord = wordsForLength[randomIndex];
+    console.log(`Selected word from words_alpha.txt for ${difficulty}: ${selectedWord}`);
+    return selectedWord;
+  }
+  
+  // Fallback words for each difficulty level
   const realWords = {
     'easy': [
       'CAKE', 'FISH', 'TIME', 'BALL', 'DUCK', 'FROG', 'JUMP', 'KIND', 'LAKE', 'MOON', 
