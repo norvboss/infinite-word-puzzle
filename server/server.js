@@ -53,10 +53,17 @@ try {
   
   console.log(`Loaded ${words.length} allowed guess words from s.txt`);
   
-  // Add words to the collection
+  // Add words to the collection - CRITICAL FIX: Store the word as BOTH key and value
   words.forEach(word => {
-    S_WORDS.set(word, true);
+    S_WORDS.set(word, word);  // Changed from set(word, true) to set(word, word)
   });
+  
+  // Verify some common words were loaded
+  const testWords = ['HOUSE', 'PLATE', 'EAGLE', 'WATER', 'APPLE'];
+  testWords.forEach(word => {
+    console.log(`Test word "${word}" in dictionary: ${S_WORDS.has(word)}`);
+  });
+  
 } catch (err) {
   console.error('Error loading s.txt:', err);
   console.log('Will use words_alpha for guesses as well');
@@ -65,9 +72,15 @@ try {
     // Clear S_WORDS and copy entries from WORDS_ALPHA instead of trying to reassign
     S_WORDS.clear();
     for (const [word, _] of WORDS_ALPHA.entries()) {
-      S_WORDS.set(word, true);
+      S_WORDS.set(word, word);  // Store the word as BOTH key and value
     }
     console.log(`Using words_alpha (${WORDS_ALPHA.size} words) for allowed guesses`);
+    
+    // Verify some common words were loaded
+    const testWords = ['HOUSE', 'PLATE', 'EAGLE', 'WATER', 'APPLE'];
+    testWords.forEach(word => {
+      console.log(`Test word "${word}" in dictionary: ${S_WORDS.has(word)}`);
+    });
   }
 }
 
@@ -466,9 +479,6 @@ io.on('connection', (socket) => {
         const targetWord = gameData.targetWord.toUpperCase();
         const submittedGuess = guess.toUpperCase();
         
-        // Debug dictionary status - simplified
-        console.log(`Dictionary validation: Checking "${submittedGuess}" against dictionary (S_WORDS size: ${S_WORDS.size})`);
-
         // Verify guess length
         if (submittedGuess.length !== targetWord.length) {
             console.error(`Invalid guess length. Expected ${targetWord.length}, got ${submittedGuess.length}`);
@@ -476,15 +486,33 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // Verify word is in dictionary using our helper function
-        if (!isValidGuess(submittedGuess)) {
-            console.error(`Invalid guess: "${submittedGuess}" not found in dictionary`);
-            
-            // Dump a sample of the dictionary for this word length for debugging
-            dumpDictionarySample(submittedGuess.length);
-            
-            socket.emit('guess_error', { message: 'Not in word list' });
-            return;
+        // DIRECT DICTIONARY CHECK - Simplest and most reliable approach
+        const isInDictionary = S_WORDS.has(submittedGuess);
+        console.log(`Dictionary check: "${submittedGuess}" found in dictionary: ${isInDictionary}`);
+        
+        if (!isInDictionary) {
+            // Try the target word too (for compatibility)
+            if (submittedGuess === targetWord) {
+                console.log(`Word "${submittedGuess}" is the target word, allowing it anyway`);
+            } else {
+                console.error(`Invalid guess: "${submittedGuess}" not found in dictionary (S_WORDS size: ${S_WORDS.size})`);
+                
+                // Only do this diagnostic dump once in a while to avoid spamming logs
+                if (Math.random() < 0.1) { // Only 10% of the time
+                    // Dump the first few items from S_WORDS to debug its structure
+                    console.log("=== S_WORDS DEBUG SAMPLE ===");
+                    let count = 0;
+                    for (const [key, value] of S_WORDS.entries()) {
+                        console.log(`S_WORDS entry ${count}: key="${key}", value="${value}"`);
+                        count++;
+                        if (count >= 5) break;
+                    }
+                    console.log("=== END DEBUG SAMPLE ===");
+                }
+                
+                socket.emit('guess_error', { message: 'Not in word list' });
+                return;
+            }
         }
 
         // Get player username
@@ -1213,6 +1241,12 @@ function checkPendingChallenges(username) {
 }
 
 function storeActiveGame(gameId, data) {
+    // Make sure the target word is always a valid guess, even if it's not in the dictionary
+    if (data.targetWord && !S_WORDS.has(data.targetWord)) {
+        console.log(`Adding target word "${data.targetWord}" to dictionary to ensure it's always a valid guess`);
+        S_WORDS.set(data.targetWord, data.targetWord);
+    }
+    
     activeGames.set(gameId, data);
     console.log(`Stored active game ${gameId} with target word ${data.targetWord}`);
 }
