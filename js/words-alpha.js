@@ -1,8 +1,10 @@
-// Ultra-simple words_alpha.txt loader
-console.log("WORDS_ALPHA: Starting loader");
+// Ultra-simple words_alpha.txt loader - MODIFIED TO USE HARDCODED TARGET WORDS
+console.log("WORDS_ALPHA: Starting loader with hardcoded target words");
 
 // Global dictionary variables
 window.WORDS_ALPHA = new Set();
+window.S_WORDS = new Set();
+window.S_WORDS_LOADED = false;
 window.ACCEPT_ALL_WORDS = false; // Set to false by default to enforce validation
 
 // Global flag to indicate dictionary loading status
@@ -15,9 +17,9 @@ window.isWordInDictionary = function(word) {
     // Always convert to uppercase for case-insensitive matching
     const upperWord = word.toUpperCase().trim();
     
-    // Check if it's in the dictionary
-    const result = window.WORDS_ALPHA.has(upperWord);
-    console.log(`Word check: "${upperWord}" - ${result ? 'FOUND' : 'NOT FOUND'} in dictionary (${window.WORDS_ALPHA.size} words)`);
+    // Check if it's in the allowed guesses dictionary (S_WORDS)
+    const result = window.S_WORDS.has(upperWord);
+    console.log(`Word check: "${upperWord}" - ${result ? 'FOUND' : 'NOT FOUND'} in dictionary (${window.S_WORDS.size} words)`);
     
     return result;
 };
@@ -27,44 +29,144 @@ window.isWordInWordsAlpha = function(word) {
     return window.isWordInDictionary(word);
 };
 
-// Load the dictionary from words_alpha.txt
+// Load the dictionary from hardcoded words and s.txt
 function loadDictionary() {
-    console.log("Loading dictionary from words_alpha.txt...");
+    console.log("Loading target words from hardcoded list and allowed guesses from s.txt...");
     
-    // Clear the dictionary first
+    // Clear the dictionaries first
     window.WORDS_ALPHA.clear();
+    window.S_WORDS.clear();
     window.DICTIONARY_LOADED = false;
+    window.S_WORDS_LOADED = false;
     
-    // CRITICAL FIX: We need to make sure we're using the correct path for words_alpha.txt
-    // Try different possible locations
+    // Load hardcoded target words from words_alpha.txt contents
+    loadHardcodedTargetWords();
+    
+    // Load allowed guesses from s.txt
+    loadSWords();
+    
+    // Add final safety check to make sure problematic words are removed
+    // Run after a short delay to ensure dictionaries are loaded first
+    setTimeout(() => {
+        console.log("Running final verification of dictionaries");
+        const problematicWords = ["HOWTO", "README", "FIXME", "TODO", "TEST", "DEBUG"];
+        
+        // Remove from WORDS_ALPHA (target words)
+        if (window.WORDS_ALPHA) {
+            let removed = 0;
+            problematicWords.forEach(word => {
+                if (window.WORDS_ALPHA.has(word)) {
+                    window.WORDS_ALPHA.delete(word);
+                    removed++;
+                    console.warn(`FINAL SAFETY: Removed "${word}" from target words`);
+                }
+            });
+            
+            if (removed > 0) {
+                console.warn(`FINAL SAFETY: Removed ${removed} problematic words from target words dictionary`);
+            } else {
+                console.log("FINAL SAFETY: No problematic words found in target words dictionary");
+            }
+        }
+    }, 2000);
+}
+
+// Load hardcoded target words from words_alpha.txt
+function loadHardcodedTargetWords() {
+    console.log("Loading hardcoded target words...");
+    
+    // Hardcoded words from words_alpha.txt (all uppercase for consistency)
+    const targetWords = {
+        // 4-letter words
+        easy: [
+            "LUCK", "GAME", "CALM", "KIND", "FAST", "RICH", "TIME", "JUMP", 
+            "DARK", "BLUE", "COLD", "GOLD", "FIRE", "FISH", "GOOD", "RAIN", 
+            "MOON", "STAR", "SING", "ROAD", "WIND", "TREE", "SOFT", "WARM"
+        ],
+        // 5-letter words
+        medium: [
+            "APPLE", "BRAVE", "CHASE", "DRESS", "EAGLE", "FROST", "GIANT", 
+            "HOUSE", "JELLY", "KNIFE", "LAUGH", "MAGIC", "NIGHT", "OCEAN", 
+            "PLANT", "QUEEN", "RIVER", "SLEEP", "TIGER", "TRAIN", "USUAL", 
+            "VOICE", "WORLD", "YOUTH", "ZEBRA"
+        ],
+        // 6-letter words
+        hard: [
+            "ANIMAL", "BUTTER", "CIRCLE", "DANGER", "ENERGY", "FINGER", 
+            "GARDEN", "HAMMER", "ISLAND", "JUNGLE", "KEEPER", "LAPTOP", 
+            "MARKET", "NATURE", "ORANGE", "PERSON", "QUESTER", "ROCKET", 
+            "SUMMER", "TABLET", "VELVET", "WINDOW", "YELLOW", "ZIPPER", "BEACON"
+        ],
+        // 7-letter words
+        expert: [
+            "AMAZING", "BLANKET", "CAPTAIN", "DIGITAL", "ECONOMY", "FREEDOM", 
+            "GALLERY", "HARVEST", "IMAGINE", "JOURNEY", "KITCHEN", "LIBERTY", 
+            "MONSTER", "NATURAL", "OBSERVE", "PACKAGE", "QUALITY", "RESCUEE", 
+            "SHELTER", "TEACHER", "UNICORN", "VEHICLE", "WELCOME", "ZEPPELIN", "ANTENNA"
+        ]
+    };
+    
+    // Add all the words to the WORDS_ALPHA dictionary
+    let wordCount = 0;
+    Object.values(targetWords).forEach(wordList => {
+        wordList.forEach(word => {
+            window.WORDS_ALPHA.add(word);
+            wordCount++;
+        });
+    });
+    
+    console.log(`Added ${wordCount} hardcoded target words to dictionary`);
+    window.DICTIONARY_LOADED = true;
+    
+    // Check for problematic words
+    checkForProblematicWords();
+    
+    // Check sample words to verify dictionary load
+    checkSampleWords();
+}
+
+// Load the allowed guesses from s.txt
+function loadSWords() {
+    console.log("Loading allowed guesses from s.txt...");
+    
+    // Try different possible locations for s.txt
     const possiblePaths = [
-        'words_alpha.txt',         // Root directory
-        '/words_alpha.txt',        // Root with leading slash
-        './words_alpha.txt',       // Explicit current directory
-        '../words_alpha.txt',      // Parent directory
-        'assets/words_alpha.txt',  // Assets directory
-        'data/words_alpha.txt'     // Data directory
+        's.txt',         // Root directory
+        '/s.txt',        // Root with leading slash
+        './s.txt',       // Explicit current directory
+        '../s.txt',      // Parent directory
+        'assets/s.txt',  // Assets directory
+        'data/s.txt'     // Data directory
     ];
     
     // Try to load from each path
     function tryNextPath(index) {
         if (index >= possiblePaths.length) {
-            console.error('Failed to load dictionary from any path');
-            addFallbackWords();
+            console.error('Failed to load s.txt from any path');
+            console.log('Using target words for allowed guesses as well');
+            // If s.txt fails to load, use target words for allowed guesses too
+            if (window.WORDS_ALPHA.size > 0) {
+                window.S_WORDS = new Set(window.WORDS_ALPHA);
+                window.S_WORDS_LOADED = true;
+                console.log(`Using ${window.S_WORDS.size} target words as allowed guesses too`);
+            } else {
+                // If both fail, add fallback words
+                addFallbackSWords();
+            }
             return;
         }
         
         const path = possiblePaths[index];
-        console.log(`Trying to load dictionary from: ${path}`);
+        console.log(`Trying to load s.txt from: ${path}`);
         
         // Make the fetch request
         fetch(path)
         .then(response => {
                 if (!response.ok) {
-                    console.error(`Failed to load dictionary with status: ${response.status}`);
+                    console.error(`Failed to load s.txt with status: ${response.status}`);
                     throw new Error(`Failed with status: ${response.status}`);
                 }
-                console.log("Dictionary file found, processing content...");
+                console.log("s.txt file found, processing content...");
             return response.text();
         })
         .then(text => {
@@ -76,24 +178,17 @@ function loadDictionary() {
                 for (const line of lines) {
                     const word = line.trim();
                     if (word) {
-                        window.WORDS_ALPHA.add(word.toUpperCase());
+                        window.S_WORDS.add(word.toUpperCase());
                         wordCount++;
                     }
                 }
                 
-                // Check if we got a reasonable number of words
-                if (wordCount < 1000) {
-                    console.warn(`Only loaded ${wordCount} words, which seems too few. Dictionary may be incomplete.`);
-                } else {
-                    console.log(`Successfully loaded ${wordCount} words from dictionary`);
-                    window.DICTIONARY_LOADED = true;
-                }
-                
-                // Check some common words
-                checkSampleWords();
+                // Set flag and log success
+                window.S_WORDS_LOADED = true;
+                console.log(`Successfully loaded ${wordCount} allowed guess words from s.txt`);
             })
             .catch(error => {
-                console.error(`Error loading from ${path}:`, error);
+                console.error(`Error loading s.txt from ${path}:`, error);
                 // Try the next path
                 tryNextPath(index + 1);
             });
@@ -101,6 +196,35 @@ function loadDictionary() {
     
     // Start trying paths
     tryNextPath(0);
+}
+
+// Add fallback allowed guess words if s.txt fails to load
+function addFallbackSWords() {
+    console.log("ADDING FALLBACK WORDS TO S_WORDS");
+    
+    // Use the same basic words for allowed guesses
+    const basicWords = [
+        // Common words like in addFallbackWords()
+        "THE", "AND", "FOR", "NOT", "BUT", "YOU", "ALL", "ANY", "CAN", "HAD"
+        // ... add more as needed
+    ];
+    
+    // Add to S_WORDS
+    basicWords.forEach(word => {
+        window.S_WORDS.add(word);
+    });
+    
+    window.S_WORDS_LOADED = true;
+    console.log(`Added ${basicWords.length} fallback words to S_WORDS`);
+    
+    // If WORDS_ALPHA is also empty, copy these words there too
+    if (!window.DICTIONARY_LOADED && window.WORDS_ALPHA.size === 0) {
+        basicWords.forEach(word => {
+            window.WORDS_ALPHA.add(word);
+        });
+        window.DICTIONARY_LOADED = true;
+        console.log(`Also added ${basicWords.length} fallback words to WORDS_ALPHA`);
+    }
 }
 
 // Check some sample words to verify dictionary load
@@ -114,61 +238,31 @@ function checkSampleWords() {
     });
 }
 
-// Add fallback words if dictionary fails to load
-function addFallbackWords() {
-    console.log("ADDING FALLBACK WORDS TO DICTIONARY");
+// Add function to check for and report problematic words
+function checkForProblematicWords() {
+    const problematicWords = ["HOWTO", "FIXME", "README", "TODO"];
+    console.log("=== CHECKING FOR PROBLEMATIC WORDS IN DICTIONARIES ===");
     
-    // Common dictionary words
-    const basicWords = [
-        // Common 3-letter words
-        "THE", "AND", "FOR", "NOT", "BUT", "YOU", "ALL", "ANY", "CAN", "HAD", "HER", "HIM", "HIS", "HOW",
-        "MAN", "NEW", "NOW", "OLD", "OUR", "OUT", "SEE", "TWO", "WAY", "WHO", "BOY", "DID", "GET", "HAS",
-        "LET", "PUT", "SAY", "SHE", "TOO", "USE", "DAY", "BET", "CUT", "LIE", "PAY", "RUN", "WAR", "YES",
-        
-        // Common 4-letter words
-        "THAT", "WITH", "HAVE", "THIS", "WILL", "YOUR", "FROM", "THEY", "KNOW", "WANT", "BEEN", "GOOD",
-        "MUCH", "SOME", "TIME", "VERY", "WHEN", "COME", "HERE", "JUST", "LIKE", "LONG", "MAKE", "MANY",
-        "MORE", "ONLY", "OVER", "SUCH", "TAKE", "THAN", "THEM", "THEN", "WELL", "WERE", "WHAT", "WORK",
-        "BACK", "DARK", "DOWN", "EVEN", "FIND", "GIVE", "HAND", "INTO", "KEEP", "LAST", "MIND", "NAME",
-        "NEXT", "SAME", "TELL", "OMAN", "AWAY", "BEND", "BOOK", "CARE", "CITY", "COOL", "DEAL", "DOOR",
-        "EASY", "FAST", "FEEL", "FIRE", "FISH", "FIVE", "FOOD", "FOUR", "GAME", "GIRL", "GROW", "HARD",
-        "HOLD", "HOME", "HOPE", "KIND", "KING", "LAND", "LIFE", "LIVE", "LOOK", "LOSE", "LOVE", "MOVE",
-        "NEED", "OPEN", "PART", "PICK", "PLAY", "REAL", "ROAD", "ROOM", "RULE", "SEAT", "SEES", "SELF",
-        "SEND", "SIDE", "STAR", "STAY", "STEP", "STOP", "SURE", "TALK", "TEAM", "TELL", "TRUE", "TURN",
-        
-        // Common 5-letter words
-        "ABOUT", "ABOVE", "AFTER", "AGAIN", "ALONE", "ALONG", "AMONG", "BEING", "BELOW", "BLACK",
-        "BREAD", "BRING", "BUILD", "CARRY", "CAUSE", "CHILD", "CLEAR", "CLOSE", "COUNT", "DREAM", 
-        "DRINK", "DRIVE", "EARLY", "EARTH", "ENJOY", "ENTER", "EVERY", "FIELD", "FIRST", "FLOOR", 
-        "FOCUS", "FORCE", "FRAME", "FRONT", "FUNNY", "GLASS", "GOING", "GREAT", "GREEN", "GROUP", 
-        "HAPPY", "HEART", "HORSE", "HOUSE", "HUMAN", "CLEAN", "LEARN", "LEVEL", "LIGHT", "LOOSE", 
-        "MAGIC", "MAJOR", "MARCH", "METAL", "MONEY", "MONTH", "MUSIC", "NEVER", "NIGHT", "NORTH", 
-        "NURSE", "ORDER", "OTHER", "PARTY", "PEACE", "PHONE", "PIECE", "PLACE", "PLANE", "PLANT", 
-        "PLATE", "PRICE", "QUIET", "QUITE", "RADIO", "READY", "RIGHT", "RIVER", "ROUND", "SHARP", 
-        "SHEEP", "SHINY", "SHIRT", "SHOES", "SHORT", "SILLY", "SINCE", "SKILL", "SLEEP", "SMALL", 
-        "SMILE", "SNAKE", "SOUND", "SOUTH", "SPACE", "SPORT", "STAGE", "STORM", "STORY", "STYLE", 
-        "SUGAR", "SWEET", "TABLE", "TASTE", "TEACH", "THANK", "THEIR", "THEME", "THERE", "THESE", 
-        "THICK", "THING", "THINK", "THIRD", "THOSE", "THREE", "THROW", "TODAY", "TOUCH", "TRAIN", 
-        "TRUTH", "TWICE", "UNDER", "UNTIL", "VISIT", "VOICE", "WATER", "WHERE", "WHICH", "WHILE", 
-        "WHITE", "WHOLE", "WHOSE", "WOMAN", "WORLD", "WORRY", "WOULD", "WRITE", "YOUNG"
-    ];
+    // Check WORDS_ALPHA (target words)
+    if (window.WORDS_ALPHA) {
+        problematicWords.forEach(word => {
+            if (window.WORDS_ALPHA.has(word)) {
+                console.warn(`PROBLEM DETECTED: "${word}" found in WORDS_ALPHA (target words)! Removing it.`);
+                window.WORDS_ALPHA.delete(word);
+            } else {
+                console.log(`Good: "${word}" not found in WORDS_ALPHA (target words)`);
+            }
+        });
+    }
     
-    // More Wordle-style 5-letter words
-    const wordleWords = [
-        "APPLE", "BRAVE", "CABLE", "DANCE", "EAGLE", "FABLE", "GRACE", "HASTE", "IMAGE", "JOLLY",
-        "KNIFE", "LEMON", "MANGO", "NOBLE", "OCEAN", "PIANO", "QUEEN", "RAPID", "SUNNY", "TABLE",
-        "ULTRA", "VIVID", "WASTE", "XENON", "YACHT", "ZEBRA", "ADULT", "BLUFF", "CRANK", "DRIFT",
-        "ELBOW", "FLAIR", "GLOOM", "HUNCH", "IVORY", "JOKER", "KIOSK", "LUNAR", "MOIST", "NYMPH",
-        "OXIDE", "PLUCK", "QUARK", "RESIN", "SWOOP", "TONIC", "UNZIP", "VENOM", "WHELP", "XEROX"
-    ];
-    
-    // Add all the words to the dictionary
-    const allWords = [...basicWords, ...wordleWords];
-    allWords.forEach(word => {
-        window.WORDS_ALPHA.add(word);
-    });
-    
-    console.log(`Added ${allWords.length} fallback words to dictionary`);
+    // Check S_WORDS (allowed guesses)
+    if (window.S_WORDS) {
+        problematicWords.forEach(word => {
+            if (window.S_WORDS.has(word)) {
+                console.log(`Note: "${word}" found in S_WORDS (allowed guesses) - this is ok.`);
+            }
+        });
+    }
 }
 
 // User-friendly word check function
@@ -204,6 +298,9 @@ window.reloadDictionary = function() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Page loaded, loading dictionary...');
     loadDictionary();
+    
+    // Add a check for problematic words after a delay to ensure dictionaries are loaded
+    setTimeout(checkForProblematicWords, 5000);
 });
 
 // Make functions available globally
@@ -376,4 +473,65 @@ function addManualLoadButton() {
     document.body.appendChild(container);
     
     return container;
-} 
+}
+
+// Add a helper function to check if a specific word is in the dictionary
+window.checkSpecificWord = function(word) {
+    if (!word) {
+        console.log('Please provide a word to check');
+        return 'No word provided';
+    }
+    
+    const upperWord = word.toUpperCase().trim();
+    
+    // Check in WORDS_ALPHA (target words)
+    const inWordsAlpha = window.WORDS_ALPHA && window.WORDS_ALPHA.has(upperWord);
+    
+    // Check in S_WORDS (allowed guesses)
+    const inSWords = window.S_WORDS && window.S_WORDS.has(upperWord);
+    
+    console.log(`
+==== SPECIFIC WORD CHECK ====
+Word: "${upperWord}"
+In target words (WORDS_ALPHA): ${inWordsAlpha ? 'YES ✓' : 'NO ✗'}
+In allowed guesses (S_WORDS): ${inSWords ? 'YES ✓' : 'NO ✗'}
+Target words loaded: ${window.DICTIONARY_LOADED ? 'YES' : 'NO'}
+Allowed guesses loaded: ${window.S_WORDS_LOADED ? 'YES' : 'NO'}
+===========================
+`);
+    
+    return {
+        inTargetWords: inWordsAlpha,
+        inAllowedGuesses: inSWords
+    };
+};
+
+// Add a debug function to check for problematic words
+window.checkProblematicWords = function() {
+    const problematicWords = ["HOWTO", "README", "FIXME", "TODO", "TEST", "DEBUG"];
+    const results = {};
+    
+    console.log("==== CHECKING FOR PROBLEMATIC WORDS ====");
+    
+    // Check WORDS_ALPHA (target words)
+    problematicWords.forEach(word => {
+        const inWordsAlpha = window.WORDS_ALPHA && window.WORDS_ALPHA.has(word);
+        const inSWords = window.S_WORDS && window.S_WORDS.has(word);
+        
+        results[word] = {
+            inTargetWords: inWordsAlpha,
+            inAllowedGuesses: inSWords
+        };
+        
+        if (inWordsAlpha) {
+            console.warn(`PROBLEM: "${word}" found in target words (WORDS_ALPHA)!`);
+        }
+        
+        if (inSWords) {
+            console.log(`Note: "${word}" found in allowed guesses (S_WORDS) - this is ok.`);
+        }
+    });
+    
+    console.log("Problematic words status:", results);
+    return results;
+}; 
