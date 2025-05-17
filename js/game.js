@@ -397,8 +397,8 @@ class WordleGame {
       
         // once s.txt is loaded, use it; otherwise fall back
         const source = window.S_WORDS_LOADED
-          ? window.S_WORDS
-          : window.WORDS_ALPHA;
+          ? window.WORDS_WORDS
+          : window.S_WORDS;
       
         const candidates = Array.from(source).filter(w => w.length === wordLength);
       
